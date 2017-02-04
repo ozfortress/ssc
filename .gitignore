@@ -1,0 +1,17 @@
+# D
+.dub
+docs.json
+__dummy.html
+*.o
+*.a
+*.obj
+tmp/
+bin/
+
+# SSC
+logs/
+
+## Secrets
+config/keys.json
+config/secrets.json
+config/servers.json

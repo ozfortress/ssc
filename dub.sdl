@@ -1,0 +1,37 @@
+name "ssc"
+description "Source Server Controller"
+authors "Benjamin Schaaf"
+copyright "Copyright © 2017, Benjamin Schaaf"
+license "MIT"
+
+dependency "vibe-d" version="~>0.7"
+dependency "jsonizer" version="~>0.7.3"
+
+preBuildCommands "mkdir -p bin"
+targetName "bin/ssc"
+
+# Development Environment
+configuration "application" {
+    targetType "executable"
+    versions "VibeDefaultMain" "development"
+}
+
+# Production Environment
+configuration "production" {
+    targetType "executable"
+    versions "VibeDefaultMain" "production"
+    releaseMode
+}
+
+# Test Environment
+configuration "unittest" {
+    targetType "executable"
+    mainSourceFile "tmp/ut.d"
+    targetName "tmp/__test__unittest__"
+    sourcePaths "source" "tests"
+    importPaths "source" "tests"
+    preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f tmp/ut.d"
+    versions "VibeCustomMain"
+
+    dependency "unit-threaded" version="*"
+}
