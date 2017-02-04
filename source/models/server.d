@@ -270,7 +270,7 @@ class Server {
         DateTime lastUpdate;
 
         @property string connectString() {
-            return "connect %s; sv_password \"%s\"; rcon_password \"%s\"".format(address, password, rconPassword);
+            return "connect %s; password \"%s\"; rcon_password \"%s\"".format(address, password, rconPassword);
         }
     }
 
