@@ -28,6 +28,6 @@ table.table
         td
             code= server.status.connectString
     tr(class=p.lastUpdateClass)
-        th Last Updated
+        th Last Poll
         td= p.lastUpdate
 

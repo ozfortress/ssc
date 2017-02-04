@@ -1,10 +1,13 @@
 module web.controller.bookings;
 import web.controller;
 
-static import store;
+import std.conv;
+import std.datetime;
+
+import store;
 import models;
 
-@path("/bookings/:server")
+@path("/controller/bookings")
 class BookingsInterface {
     mixin WebInterface;
 
@@ -17,10 +20,26 @@ class BookingsInterface {
     }
 
     @path("")
-    void postCreate(scope HTTPServerRequest req) {
+    void postCreate(scope HTTPServerRequest req, string user, ushort duration) {
+        logInfo("Yay %s", req.params);
+        requireAuthentication(req);
+
+        auto now = cast(DateTime)Clock.currTime();
+        auto endsAt = now + duration.dur!"hours";
+        try {
+            Booking.create(client, user, endsAt);
+        } catch (StoreException e) {
+            enforceHTTP(false, HTTPStatus.conflict, "Duplicate client/user");
+        }
+        emptyResponse;
+    }
+
+    @path("/:server/delete")
+    void postDelete(scope HTTPServerRequest req) {
         requireAuthentication(req);
         requireBooking(req);
 
+        booking.end();
         emptyResponse;
     }
 }

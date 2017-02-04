@@ -4,6 +4,8 @@ import models;
 import std.datetime;
 import std.exception;
 
+import vibe.d;
+
 import store;
 
 class Booking {
@@ -26,8 +28,10 @@ class Booking {
         auto server = servers.front;
 
         auto booking = new Booking(client, user, server, endsAt);
-        enforce(store.findBy!"id"(booking.id) is null, "Duplicate booking");
         store.add(booking);
+
+        // Start the booking after successful store
+        booking.start();
         return booking;
     }
 
@@ -36,6 +40,8 @@ class Booking {
     Server server;
     DateTime startedAt;
     DateTime endsAt;
+
+    private Timer endTimer;
 
     @property auto id() const {
         return client ~ ":" ~ user;
@@ -53,22 +59,23 @@ class Booking {
         this.startedAt = cast(DateTime)Clock.currTime();
     }
 
+    void start() {
+        auto now = cast(DateTime)Clock.currTime();
+        auto timeout = endsAt - now;
+        endTimer = setTimer(timeout, &end, false);
+
+        // Start the server after successfully creating a booking
+        if (!server.running) server.spawn();
+
+        // Setup passwords
+        server.generatePasswords();
+    }
+
     void end() {
         Booking.store.remove(this);
+        server.reset();
+
+        // Scramble passwords
+        server.generatePasswords();
     }
-
-
 }
-
-/*private static void update() {
-    synchronized(bookingsMutex) {
-        auto bookings = cast(DList!Booking)_bookings;
-        auto now = cast(DateTime)Clock.currTime();
-
-        while (now > bookings.front.endsAt) {
-            auto booking = bookings.front;
-            bookings.removeFront();
-            endBooking(booking);
-        }
-    }
-}*/

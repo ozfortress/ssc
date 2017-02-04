@@ -30,34 +30,28 @@ block content
         .panel-body
             #logs
             - url = "/controller/servers/%s/command?key=%s".format(server.name, key);
-            form.form-horizontal(role="form", action=url, method="post")
-                input.col-sm-10.form-control(type="text", name="command", autofocus)
-                input.col-sm-2.btn.btn-default(type="submit", value="Execute")
+            form(role="form", action=url, method="post")
+                .col-md-11
+                    input.form-control(type="text", name="command", autofocus)
+                .col-md-1
+                    input.btn.btn-default(type="submit", value="Execute")
 
     script.
         function updateStatus() {
-            var req = new XMLHttpRequest();
-            req.open('GET', '/controller/servers/#{server.name}/status?key=#{key}');
-            req.send();
-            var container = document.getElementById('status');
-            req.onload = function() {
-                container.innerHTML = req.responseText;
-            }
-            return false;
+            get('/controller/servers/#{server.name}/status?key=#{key}', function(response) {
+                var container = document.getElementById('status');
+                container.innerHTML = response;
+            });
         }
 
         updateStatus();
         setInterval(updateStatus, 3000);
 
         function updateLogs() {
-            var req = new XMLHttpRequest();
-            req.open('GET', '/controller/servers/#{server.name}/logs?key=#{key}');
-            req.send();
-            var container = document.getElementById('logs');
-            req.onload = function() {
-                container.innerHTML = req.responseText;
-            }
-            return false;
+            get('/controller/servers/#{server.name}/logs?key=#{key}', function(response) {
+                var container = document.getElementById('logs');
+                container.innerHTML = response;
+            });
         }
 
         updateLogs();

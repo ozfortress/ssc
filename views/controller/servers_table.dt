@@ -8,15 +8,17 @@ tr
     th Players
     th Status
     th Booking
+    th Last Poll
 
 - foreach (server; servers)
     - auto p = ServerPresenter(server);
-    tr(class=p.statusClass)
+    tr
         td
             a(href="/controller/servers/#{server.name}?key=#{key}")= server.name
         td= server.status.hostname
         td= server.status.address
         td= server.status.map
         td= p.playerStatus
-        td= p.statusName
+        td(class=p.statusClass)= p.statusName
         td= p.bookingStatus
+        td(class=p.lastUpdateClass)= p.lastUpdate
