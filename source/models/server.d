@@ -175,14 +175,8 @@ class Server {
             // Set the process's stdout as non-blocking
             processPipes.stdout.markNonBlocking();
 
-            static void _watch(shared Server server) {
-                (cast(Server)server).watch();
-            }
-            runWorkerTaskH(&_watch, cast(shared)this);
-            static void _poll(shared Server server) {
-                (cast(Server)server).poll();
-            }
-            runWorkerTaskH(&_poll, cast(shared)this);
+            runWorkerTaskH!(Server.watcher)(cast(shared)this);
+            runWorkerTaskH!(Server.poller)(cast(shared)this);
 
             dirty = false;
             reset();
@@ -201,6 +195,10 @@ class Server {
             auto status = processPipes.pid.tryWait();
             return !status.terminated;
         }
+    }
+
+    @property bool sharedRunning() shared {
+        return (cast(Server)this).running;
     }
 
     /**
@@ -241,13 +239,6 @@ class Server {
             processPipes.stdin.writeln(value);
             processPipes.stdin.flush();
         }
-    }
-
-    /**
-     * Reads from the server's source console
-     */
-    private string readoutln() {
-        return processPipes.stdout.readlnNoBlock();
     }
 
     private void log(string line, bool cache = true) {
@@ -294,78 +285,107 @@ class Server {
         sendCMD("rcon_password");
     }
 
-    private void watch() {
-        auto readline(bool cache = false) {
-            auto line = readoutln();
-            if (line == null) return null;
+    private auto readline() {
+        auto line = processPipes.stdout.readlnNoBlock();
+        if (line == null) return null;
 
-            logInfo("Server '%s': %s", name, line);
-            return line;
-        }
+        logInfo("Server '%s': %s", name, line);
+        return line;
+    }
 
+    private void watcher() shared {
         logInfo("Started watcher for %s", name);
-        while (running) {
-            auto line = readline();
-            if (line == null) {
-                Thread.sleep(100.dur!"msecs");
-                continue;
+        while (sharedRunning) {
+            try {
+                (cast(Server)this).watch();
+            } catch (Exception e) {
+                logError("'%s' Watcher: %s", name, e);
             }
-
-            auto cacheLine = true;
-
-            // status
-            if (line.startsWith("hostname: ")) {
-                statusSent = false; // Allow another status update to be queried
-                status.running = true; // Once we read a status, the server is properly responding
-                status.lastUpdate = cast(DateTime)Clock.currTime();
-
-                cacheLine = false; // Don't output this, parse it instead
-
-                status.hostname = line.split(":")[1].strip();
-                /*version =*/readline();
-                auto udpIp = readline();
-                auto udp = udpIp.matchFirst(`[0-9\.]+:[0-9]+`).front;
-                auto port = udp.split(":")[1];
-                auto ip = udpIp.matchFirst(`public ip: [0-9\.]+`).front.split(":")[1].strip();
-                status.address = "%s:%s".format(ip, port);
-                /*steamID = */readline();
-                /*account = */readline();
-                auto map = readline();
-                status.map = map.split(":")[1].strip().split(" ")[0];
-                /*tags = */readline();
-                auto players = readline();
-                logInfo(players);
-                status.humanPlayers = matchFirst(players, `\d+ humans`).front.split(" ")[0].to!size_t;
-                status.botPlayers = matchFirst(players, `\d+ bots`).front.split(" ")[0].to!size_t;
-                status.maxPlayers = matchFirst(players, `\d+ max`).front.split(" ")[0].to!size_t;
-
-                // TODO: parse players
-            } else if (line.startsWith(`"sv_password" = "`)) {
-                status.password = line.split(" = ")[1].split(`"`)[1];
-            } else if (line.startsWith(`"rcon_password" = "`)) {
-                status.rconPassword = line.split(" = ")[1].split(`"`)[1];
-            } else if (line == "Server is hibernating") {
-                status.hybernating = true;
-            } // TODO: wakeup
-            else if (line == "Killed") {
-                status.running = false;
-                sendCMD("status");
-            }
-
-            log(line, cacheLine);
         }
         logInfo("Terminated watcher for %s", name);
     }
 
-    private void poll() {
-        logInfo("Started poller for %s", name);
-        while (running) {
-            if (status.running) {
-                sendStatusPoll();
-            }
+    private void watch() {
+        auto line = readline();
+        if (line == null) {
+            Thread.sleep(100.dur!"msecs");
+            return;
+        }
 
-            Thread.sleep(POLL_INTERVAL);
+        auto cacheLine = true;
+
+        // status
+        if (line.startsWith("hostname: ")) {
+            statusSent = false; // Allow another status update to be queried
+            status.running = true; // Once we read a status, the server is properly responding
+            status.lastUpdate = cast(DateTime)Clock.currTime();
+
+            cacheLine = false; // Don't output this, parse it instead
+
+            parseStatus(line);
+        } else if (matchVariable(line, "sv_password")) {
+            status.password = parseVariable(line);
+        } else if (matchVariable(line, "rcon_password")) {
+            status.rconPassword = parseVariable(line);
+        } else if (line == "Server is hibernating") {
+            status.hybernating = true;
+        } // TODO: wakeup
+        else if (line == "Killed") {
+            status.running = false;
+            statusSent = false;
+            sendStatusPoll();
+        }
+
+        log(line, cacheLine);
+    }
+
+    private void parseStatus(string line) {
+        status.hostname = line.split(":")[1].strip();
+        /*version =*/readline();
+        auto udpIp = readline();
+        auto udp = udpIp.matchFirst(`[0-9\.]+:[0-9]+`).front;
+        auto port = udp.split(":")[1];
+        auto ip = udpIp.matchFirst(`public ip: [0-9\.]+`).front.split(":")[1].strip();
+        status.address = "%s:%s".format(ip, port);
+        /*steamID = */readline();
+        /*account = */readline();
+        auto map = readline();
+        status.map = map.split(":")[1].strip().split(" ")[0];
+        /*tags = */readline();
+        auto players = readline();
+        logInfo(players);
+        status.humanPlayers = matchFirst(players, `\d+ humans`).front.split(" ")[0].to!size_t;
+        status.botPlayers = matchFirst(players, `\d+ bots`).front.split(" ")[0].to!size_t;
+        status.maxPlayers = matchFirst(players, `\d+ max`).front.split(" ")[0].to!size_t;
+
+        // TODO: parse players
+    }
+
+    private bool matchVariable(string line, string name) {
+        return line.startsWith(`"%s" = "`.format(name));
+    }
+
+    private string parseVariable(string line) {
+        return line.split(" = ")[1].split(`"`)[1];
+    }
+
+    private void poller() shared {
+        logInfo("Started poller for %s", name);
+        while (sharedRunning) {
+            try {
+                (cast(Server)this).poll();
+            } catch (Exception e) {
+                logError("'%s' Poller: %s", name, e);
+            }
         }
         logInfo("Terminated poller for %s", name);
+    }
+
+    private void poll() {
+        if (status.running) {
+            sendStatusPoll();
+        }
+
+        Thread.sleep(POLL_INTERVAL);
     }
 }
