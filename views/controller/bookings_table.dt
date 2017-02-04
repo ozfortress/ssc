@@ -1,15 +1,22 @@
+- import std.string;
+
 tr
     th Client
     th User
     th Server
     th Started
     th Ending
+    th Control
 
 - foreach (booking; bookings)
     tr
         td= booking.client
         td= booking.user
-        tb
+        td
             a(href="/controller/servers/#{booking.server.name}?key=key")= booking.server.name
         td= booking.startedAt.toSimpleString()
         td= booking.endsAt.toSimpleString()
+        td
+            - auto url = "/controller/bookings/%s/delete?key=%s".format(booking.server.name, key);
+            form(role="form", action=url, method="post")
+                input.btn.btn-default(type="submit", value="End")

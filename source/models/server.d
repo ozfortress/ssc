@@ -20,6 +20,7 @@ import jsonizer;
 import store;
 import util.io;
 import util.json;
+import util.random;
 import config.application;
 
 class Server {
@@ -118,6 +119,11 @@ class Server {
 
     ~this() {
         kill();
+    }
+
+    void generatePasswords() {
+        sendCMD(`sv_password "%s"`.format(randomBase64(12)));
+        sendCMD(`rcon_password "%s"`.format(randomBase64(12)));
     }
 
     /**
