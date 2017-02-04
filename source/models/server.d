@@ -194,7 +194,7 @@ class Server {
     /**
      * Check whether the server process is running
      */
-    @property bool running() {
+    @property bool running() @safe {
         synchronized (this) {
             if (processPipes.pid is null) return false;
 
@@ -304,7 +304,7 @@ class Server {
         while (sharedRunning) {
             try {
                 (cast(Server)this).watch();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 logError("'%s' Watcher: %s", name, e);
             }
         }
@@ -314,7 +314,7 @@ class Server {
     private void watch() {
         auto line = readline();
         if (line == null) {
-            Thread.sleep(100.dur!"msecs");
+            sleep(100.dur!"msecs");
             return;
         }
 
@@ -359,6 +359,7 @@ class Server {
         status.map = map.split(":")[1].strip().split(" ")[0];
         /*tags = */readline();
         auto players = readline();
+        if (players.startsWith("sourcetv")) players = readline();
         logInfo(players);
         status.humanPlayers = matchFirst(players, `\d+ humans`).front.split(" ")[0].to!size_t;
         status.botPlayers = matchFirst(players, `\d+ bots`).front.split(" ")[0].to!size_t;
@@ -380,7 +381,7 @@ class Server {
         while (sharedRunning) {
             try {
                 (cast(Server)this).poll();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 logError("'%s' Poller: %s", name, e);
             }
         }
@@ -392,6 +393,6 @@ class Server {
             sendStatusPoll();
         }
 
-        Thread.sleep(POLL_INTERVAL);
+        sleep(POLL_INTERVAL);
     }
 }
