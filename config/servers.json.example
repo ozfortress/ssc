@@ -1,0 +1,18 @@
+{
+    "default-options": {
+        "+ip": "0.0.0.0",
+        "-game": "tf",
+        "+map": "cp_badlands"
+    },
+
+    "servers": [
+        {
+            "name": "server-name",
+            "executable": "/home/steam/.steam/tf2/srcds_run",
+            "reset-command": "reset",
+            "options": {
+                "-port": "27015"
+            }
+        }
+    ]
+}

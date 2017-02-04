@@ -1,0 +1,42 @@
+extends controller/layout.dt
+
+block head
+    title Servers
+
+block content
+    h1 Servers
+
+    table#servers.table.table-striped
+
+    h1 Bookings
+
+    table#bookings.table.table-striped
+
+    script.
+        function updateServers() {
+            var req = new XMLHttpRequest();
+            req.open('GET', '/controller/servers_table?key=#{key}');
+            req.send();
+            var container = document.getElementById('servers');
+            req.onload = function() {
+                container.innerHTML = req.responseText;
+            }
+            return false;
+        }
+
+        updateServers();
+        setInterval(updateServers, 2000);
+
+        function updateBookings() {
+            var req = new XMLHttpRequest();
+            req.open('GET', '/controller/bookings_table?key=#{key}');
+            req.send();
+            var container = document.getElementById('bookings');
+            req.onload = function() {
+                container.innerHTML = req.responseText;
+            }
+            return false;
+        }
+
+        updateBookings();
+        setInterval(updateBookings, 2000);

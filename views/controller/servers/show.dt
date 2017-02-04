@@ -1,0 +1,64 @@
+extends controller/layout.dt
+
+block head
+    title= server.name
+
+block content
+    - import std.format;
+
+    h1
+        a(href="/controller?key=#{key}") servers
+        | /#{server.name}
+
+    .panel.panel-danger
+        .panel-heading Control
+        .panel-body
+            - auto url = "/controller/servers/%s/restart?key=%s".format(server.name, key);
+            form(role="form", action=url, method="post")
+                input.btn.btn-default(type="submit", value="Restart")
+
+            - url = "/controller/servers/%s/stop?key=%s".format(server.name, key);
+            form(role="form", action=url, method="post")
+                input.btn.btn-default(type="submit", value="Stop")
+
+    .panel.panel-info
+        .panel-heading Status
+        #status
+
+    .panel.panel-default
+        .panel-heading Console
+        .panel-body
+            #logs
+            - url = "/controller/servers/%s/command?key=%s".format(server.name, key);
+            form.form-horizontal(role="form", action=url, method="post")
+                input.col-sm-10.form-control(type="text", name="command", autofocus)
+                input.col-sm-2.btn.btn-default(type="submit", value="Execute")
+
+    script.
+        function updateStatus() {
+            var req = new XMLHttpRequest();
+            req.open('GET', '/controller/servers/#{server.name}/status?key=#{key}');
+            req.send();
+            var container = document.getElementById('status');
+            req.onload = function() {
+                container.innerHTML = req.responseText;
+            }
+            return false;
+        }
+
+        updateStatus();
+        setInterval(updateStatus, 3000);
+
+        function updateLogs() {
+            var req = new XMLHttpRequest();
+            req.open('GET', '/controller/servers/#{server.name}/logs?key=#{key}');
+            req.send();
+            var container = document.getElementById('logs');
+            req.onload = function() {
+                container.innerHTML = req.responseText;
+            }
+            return false;
+        }
+
+        updateLogs();
+        setInterval(updateLogs, 1000);

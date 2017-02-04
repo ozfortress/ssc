@@ -1,0 +1,22 @@
+- import presenters;
+
+tr
+    th Name
+    th Hostname
+    th Address
+    th Map
+    th Players
+    th Status
+    th Booking
+
+- foreach (server; servers)
+    - auto p = ServerPresenter(server);
+    tr(class=p.statusClass)
+        td
+            a(href="/controller/servers/#{server.name}?key=#{key}")= server.name
+        td= server.status.hostname
+        td= server.status.address
+        td= server.status.map
+        td= p.playerStatus
+        td= p.statusName
+        td= p.bookingStatus

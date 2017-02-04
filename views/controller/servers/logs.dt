@@ -1,0 +1,2 @@
+- foreach (line; logs)
+    p= line

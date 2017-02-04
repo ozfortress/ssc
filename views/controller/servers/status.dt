@@ -1,0 +1,33 @@
+- import presenters;
+- auto p = ServerPresenter(server);
+
+table.table
+    tr
+        th Name
+        td= server.name
+    tr
+        th Hostname
+        td= server.status.hostname
+    tr
+        th Address
+        td= server.status.address
+    tr
+        th Map
+        td= server.status.map
+    tr
+        th Players
+        td= p.playerStatus
+    tr(class=p.statusClass)
+        th Status
+        td= p.statusName
+    tr
+        th Booking
+        td= p.bookingStatus
+    tr
+        th Connect String
+        td
+            code= server.status.connectString
+    tr(class=p.lastUpdateClass)
+        th Last Updated
+        td= p.lastUpdate
+

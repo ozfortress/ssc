@@ -1,0 +1,15 @@
+tr
+    th Client
+    th User
+    th Server
+    th Started
+    th Ending
+
+- foreach (booking; bookings)
+    tr
+        td= booking.client
+        td= booking.user
+        tb
+            a(href="/controller/servers/#{booking.server.name}?key=key")= booking.server.name
+        td= booking.startedAt.toSimpleString()
+        td= booking.endsAt.toSimpleString()
