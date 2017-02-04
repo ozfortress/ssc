@@ -1,13 +1,28 @@
 doctype html
 html(lang="en")
     head
+        script(src="/static/assets/js/application.js")
+        link(rel="stylesheet", href="/static/assets/css/application.css")
         script(src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js")
         link(rel="stylesheet", href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css", integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u", crossorigin="anonymous")
         script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js", integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa", crossorigin="anonymous")
         block head
     body
+        script.
+            function get(url, result) {
+                var req = new XMLHttpRequest();
+                req.open('GET', url);
+                req.send();
+                req.onerror = function() {
+                    result("Error sending request");
+                }
+                req.onload = function() {
+                    result(req.responseText);
+                }
+            }
+
         block body
-        .container
+        .container-fluid
             block content
         .sidebar
             block sidebar

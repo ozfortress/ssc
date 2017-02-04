@@ -4,39 +4,51 @@ block head
     title Servers
 
 block content
-    h1 Servers
-
-    table#servers.table.table-striped
-
-    h1 Bookings
-
-    table#bookings.table.table-striped
-
     script.
         function updateServers() {
-            var req = new XMLHttpRequest();
-            req.open('GET', '/controller/servers_table?key=#{key}');
-            req.send();
-            var container = document.getElementById('servers');
-            req.onload = function() {
-                container.innerHTML = req.responseText;
-            }
-            return false;
+            get('/controller/servers_table?key=#{key}', function(response) {
+                var container = document.getElementById('servers');
+                container.innerHTML = response;
+            });
         }
 
         updateServers();
         setInterval(updateServers, 2000);
 
         function updateBookings() {
-            var req = new XMLHttpRequest();
-            req.open('GET', '/controller/bookings_table?key=#{key}');
-            req.send();
-            var container = document.getElementById('bookings');
-            req.onload = function() {
-                container.innerHTML = req.responseText;
-            }
-            return false;
+            get('/controller/bookings_table?key=#{key}', function(response) {
+                var container = document.getElementById('bookings');
+                container.innerHTML = response;
+            });
         }
 
         updateBookings();
         setInterval(updateBookings, 2000);
+
+    - import std.string;
+
+    h1 Source Server Controller
+
+    .panel.panel-info
+        .panel-heading Servers
+        table#servers.table.table-striped
+
+    .panel.panel-info
+        .panel-heading Bookings
+        table#bookings.table.table-striped
+
+        hr
+
+        .panel-body
+            h3 Create Booking
+            - auto url = "/controller/bookings?key=%s".format(key);
+            form(role="form", action=url, method="post")
+                .row
+                    .col-md-6
+                        input.form-control(type="text", name="user", placeholder="user")
+                    .col-md-5
+                        input.form-control(type="number", name="duration", placeholder="duration (hours)")
+                    .col-md-1
+                        input.btn.btn-default(type="submit", value="Create")
+
+
