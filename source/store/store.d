@@ -72,7 +72,7 @@ shared class Store(Element, string primaryField = "") {
         synchronized (mutex.writer) {
             auto entry = KVPair(primary(element), element);
             auto range = syncContainer.equalRange(entry);
-            enforce(range.empty || range.front.value is null, "Primary key conflict");
+            enforce!StoreException(range.empty || range.front.value is null, "Primary key conflict");
             syncContainer.insert(entry);
         }
     }
@@ -121,5 +121,11 @@ shared class Store(Element, string primaryField = "") {
 
     private template FieldTypes(fields...) {
         alias FieldTypes = staticMap!(FieldType, fields);
+    }
+}
+
+class StoreException : Exception {
+    this(string msg, string file = __FILE__, ulong line = cast(ulong)__LINE__, Throwable next = null) pure nothrow @nogc @safe {
+        super(msg, file, line, next);
     }
 }
