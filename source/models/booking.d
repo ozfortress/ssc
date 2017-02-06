@@ -71,15 +71,12 @@ class Booking {
         // Start the server after successfully creating a booking
         if (!server.running) server.spawn();
 
-        // Setup passwords
-        server.generatePasswords();
+        // Make sure the server is in a stable state
+        server.reset();
     }
 
     void end() {
         Booking.store.remove(this);
         server.reset();
-
-        // Scramble passwords
-        server.generatePasswords();
     }
 }

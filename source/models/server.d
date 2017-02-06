@@ -112,9 +112,17 @@ class Server {
     this() {
     }
 
+    /**
+     * Generate a strong set of passwords.
+     */
     void generatePasswords() {
-        sendCMD(`sv_password "%s"`.format(randomBase64(12)));
-        sendCMD(`rcon_password "%s"`.format(randomBase64(12)));
+        enforce(running);
+        // Update status immediately for getting connect strings
+        status.password = randomBase64(12);
+        status.rconPassword = randomBase64(12);
+
+        sendCMD(`sv_password "%s"`.format(status.password));
+        sendCMD(`rcon_password "%s"`.format(status.rconPassword));
     }
 
     /**
@@ -122,18 +130,34 @@ class Server {
      * Use to update settings on a running server by setting the dirty flag and waiting for a time to restart
      */
     void reload(Server config) {
-        name = config.name;
-        executable = config.executable;
-        options = config.options;
-        bookable = config.bookable;
-        dirty = true;
+        synchronized (this) {
+            if (executable != config.executable || options != config.options) {
+                dirty = true;
+            }
+
+            executable = config.executable;
+            options = config.options;
+            autoStart = config.autoStart;
+            bookable = config.bookable;
+            resetCommand = config.resetCommand;
+            logPath = config.logPath;
+        }
     }
 
     /**
-     * Reset the server by running the reset command
+     * Reset the server by running the reset command and restarting if dirty.
+     * Will also kick all players for the given reason.
      */
-    void reset() {
-        if (resetCommand !is null) sendCMD(resetCommand);
+    void reset(string reason = "Server Reset") {
+        enforce(running);
+        sendCMD(`kickall "%s"`.format(reason));
+
+        if (dirty) {
+            restart();
+        } else {
+            if (resetCommand !is null) sendCMD(resetCommand);
+            generatePasswords();
+        }
     }
 
     /**
@@ -141,6 +165,9 @@ class Server {
      */
     void restart() {
         synchronized (this) {
+            auto booking = this.booking;
+            if (booking !is null) booking.end;
+
             if (running) kill();
             spawn();
         }
@@ -159,8 +186,7 @@ class Server {
             options ~= "-console";
 
             auto serverCommand = "%s %s".format(executable, options.join(" "));
-            // script captures /dev/tty which valve seems to love
-            // but we do our own log storing, so save to /dev/null
+            // script captures /dev/tty in stdout
             auto command = "unbuffer -p %s".format(serverCommand);
 
             log("Started with: %s".format(command));
