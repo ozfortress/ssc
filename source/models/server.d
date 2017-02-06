@@ -114,11 +114,6 @@ class Server {
     }
 
     this() {
-
-    }
-
-    ~this() {
-        kill();
     }
 
     void generatePasswords() {
