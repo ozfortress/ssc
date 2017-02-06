@@ -96,4 +96,17 @@ struct ServerPresenter {
         }
         return "success";
     }
+
+    Json toJson(bool includeBooking = true) {
+        auto j = Json([
+            "name": Json(server.name),
+            "status": Json(statusName),
+            "address": Json(server.status.address),
+            "connect-string": Json(connectString),
+        ]);
+
+        if (includeBooking) j["booking"] = server.booking is null ? Json.undefined : booking.toJson;
+
+        return j;
+    }
 }
