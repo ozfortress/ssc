@@ -64,7 +64,7 @@ class Server {
             logInfo("%s %s", server.name, store.all);
             auto old = store.get(server.name);
             if (old is null) {
-                store.add(server);
+                server.create();
             } else {
                 old.reload(server);
             }
@@ -88,6 +88,7 @@ class Server {
         string executable;
         string[string] options;
 
+        @jsonize("auto-start") bool autoStart = true;
         bool bookable = true;
         @jsonize("reset-command") string resetCommand = "";
         @jsonize("log-path") string logPath = null;
@@ -110,6 +111,15 @@ class Server {
     }
 
     this() {
+    }
+
+    /**
+     * Initialize the server, called when a server is ready to be added to the store
+     */
+    private void create() {
+        store.add(this);
+
+        if (autoStart) spawn();
     }
 
     /**
