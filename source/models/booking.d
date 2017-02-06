@@ -64,6 +64,7 @@ class Booking {
     }
 
     void start() {
+        logInfo("Starting booking for %s", id);
         auto now = cast(DateTime)Clock.currTime();
         auto timeout = endsAt - now;
         endTimer = setTimer(timeout, &end, false);
@@ -76,6 +77,7 @@ class Booking {
     }
 
     void end() {
+        logInfo("Ending booking for %s", id);
         Booking.store.remove(this);
         server.reset();
     }
