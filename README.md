@@ -60,7 +60,6 @@ Install [ruby](https://www.ruby-lang.org/).
 
 ```bash
 gem install capistrano -v 3.7.1
-gem install capistrano-scm-copy
 ```
 
 ### To Deploy

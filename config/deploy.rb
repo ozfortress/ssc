@@ -2,7 +2,7 @@
 lock "3.7.1"
 
 set :application, "ssc"
-set :scm, :copy
+set :scm, nil
 
 set :include_dir, ['bin', 'config', 'public']
 # set :exclude_dir, ['*']
@@ -35,9 +35,6 @@ append :linked_dirs, 'logs'
 # Default value for keep_releases is 5
 set :keep_releases, 5
 
-# Use copy deployment
-require 'capistrano/copy'
-
 namespace :deploy do
   desc 'Build using dub'
   task :build do
@@ -49,8 +46,32 @@ namespace :deploy do
   end
   after :check, :build
 
-  # desc 'Copy to server'
-  # task :copy do
-  #   run_locally
-  # end
+  desc 'Copy to server'
+  task :copy do
+    archive_name = "archive.tar.gz"
+    include_dir  = fetch(:include_dir) || "*"
+
+    run_locally do
+      files = FileList[include_dir].exclude(archive_name).join(' ')
+
+      execute "tar -cvzf #{archive_name} #{files}"
+    end
+
+    on roles(:all) do
+      # Create the release path
+      set_release_path
+      execute :mkdir, "-p", release_path
+
+      tmp_file = capture("mktemp")
+      upload!(archive_name, tmp_file)
+
+      # Clean local file
+      File.delete archive_name if File.exists? archive_name
+
+      # Extract and delete tmp file
+      execute :tar, "-xzf", tmp_file, "-C", release_path
+      execute :rm, tmp_file
+    end
+  end
+  after :build, :copy
 end
