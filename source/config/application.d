@@ -30,8 +30,8 @@ private struct Settings {
 private shared Settings _settings;
 
 shared static this() {
-    auto json = readJSON(configPath("environments", env ~ ".json"));
-    auto common = readJSON(configPath("application.json"));
+    auto json = readJSON(buildConfigPath("environments", env ~ ".json"));
+    auto common = readJSON(buildConfigPath("application.json"));
     json.merge(common);
 
     _settings = cast(shared)json.fromJSON!Settings;
@@ -48,8 +48,12 @@ shared static this() {
     return settings;
 }
 
-auto configPath(string[] args...) {
+auto buildConfigPath(string[] args...) {
     return buildPath([CONFIG_PATH] ~ args);
+}
+
+auto buildLogPath(string[] args...) {
+    return buildPath([logsPath] ~ args);
 }
 
 @property auto logsPath() {

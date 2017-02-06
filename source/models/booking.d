@@ -22,6 +22,10 @@ class Booking {
         return store.findBy!"server"(server);
     }
 
+    static auto find(string client, string user) {
+        return store.get(client ~ ":" ~ user);
+    }
+
     static Booking create(string client, string user, DateTime endsAt) {
         auto servers = Server.available;
         enforce(!servers.empty, "No server available");
@@ -60,6 +64,7 @@ class Booking {
     }
 
     void start() {
+        logInfo("Starting booking for %s", id);
         auto now = cast(DateTime)Clock.currTime();
         auto timeout = endsAt - now;
         endTimer = setTimer(timeout, &end, false);
@@ -67,15 +72,13 @@ class Booking {
         // Start the server after successfully creating a booking
         if (!server.running) server.spawn();
 
-        // Setup passwords
-        server.generatePasswords();
+        // Make sure the server is in a stable state
+        server.reset();
     }
 
     void end() {
+        logInfo("Ending booking for %s", id);
         Booking.store.remove(this);
         server.reset();
-
-        // Scramble passwords
-        server.generatePasswords();
     }
 }

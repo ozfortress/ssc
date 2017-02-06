@@ -2,14 +2,10 @@ module models.server;
 import models;
 
 import core.thread;
-import std.path;
-import std.conv;
 import std.file;
 import std.array;
-import std.regex;
-import std.format;
+import std.string;
 import std.process;
-import std.datetime;
 import std.algorithm;
 import std.container;
 
@@ -45,7 +41,7 @@ class Server {
     }
 
     private static auto readServerConfig() {
-        auto json = parseJSON(readText(configPath("servers.json")));
+        auto json = parseJSON(readText(buildConfigPath("servers.json")));
 
         // Merge in default options
         auto defaultOptions = json["default-options"];
@@ -68,7 +64,7 @@ class Server {
             logInfo("%s %s", server.name, store.all);
             auto old = store.get(server.name);
             if (old is null) {
-                store.add(server);
+                server.create();
             } else {
                 old.reload(server);
             }
@@ -92,6 +88,7 @@ class Server {
         string executable;
         string[string] options;
 
+        @jsonize("auto-start") bool autoStart = true;
         bool bookable = true;
         @jsonize("reset-command") string resetCommand = "";
         @jsonize("log-path") string logPath = null;
@@ -114,16 +111,28 @@ class Server {
     }
 
     this() {
-
     }
 
-    ~this() {
-        kill();
+    /**
+     * Initialize the server, called when a server is ready to be added to the store
+     */
+    private void create() {
+        store.add(this);
+
+        if (autoStart) spawn();
     }
 
+    /**
+     * Generate a strong set of passwords.
+     */
     void generatePasswords() {
-        sendCMD(`sv_password "%s"`.format(randomBase64(12)));
-        sendCMD(`rcon_password "%s"`.format(randomBase64(12)));
+        enforce(running);
+        // Update status immediately for getting connect strings
+        status.password = randomBase64(12);
+        status.rconPassword = randomBase64(12);
+
+        sendCMD(`sv_password "%s"`.format(status.password));
+        sendCMD(`rcon_password "%s"`.format(status.rconPassword));
     }
 
     /**
@@ -131,18 +140,34 @@ class Server {
      * Use to update settings on a running server by setting the dirty flag and waiting for a time to restart
      */
     void reload(Server config) {
-        name = config.name;
-        executable = config.executable;
-        options = config.options;
-        bookable = config.bookable;
-        dirty = true;
+        synchronized (this) {
+            if (executable != config.executable || options != config.options) {
+                dirty = true;
+            }
+
+            executable = config.executable;
+            options = config.options;
+            autoStart = config.autoStart;
+            bookable = config.bookable;
+            resetCommand = config.resetCommand;
+            logPath = config.logPath;
+        }
     }
 
     /**
-     * Reset the server by running the reset command
+     * Reset the server by running the reset command and restarting if dirty.
+     * Will also kick all players for the given reason.
      */
-    void reset() {
-        if (resetCommand !is null) sendCMD(resetCommand);
+    void reset(string reason = "Server Reset") {
+        enforce(running);
+        sendCMD(`kickall "%s"`.format(reason));
+
+        if (dirty) {
+            restart();
+        } else {
+            if (resetCommand !is null) sendCMD(resetCommand);
+            generatePasswords();
+        }
     }
 
     /**
@@ -150,6 +175,9 @@ class Server {
      */
     void restart() {
         synchronized (this) {
+            auto booking = this.booking;
+            if (booking !is null) booking.end;
+
             if (running) kill();
             spawn();
         }
@@ -168,8 +196,7 @@ class Server {
             options ~= "-console";
 
             auto serverCommand = "%s %s".format(executable, options.join(" "));
-            // script captures /dev/tty which valve seems to love
-            // but we do our own log storing, so save to /dev/null
+            // script captures /dev/tty in stdout
             auto command = "unbuffer -p %s".format(serverCommand);
 
             log("Started with: %s".format(command));
@@ -187,14 +214,14 @@ class Server {
             dirty = false;
             reset();
             statusSent = false;
-            sendStatusPoll();
+            status.sendPoll(this);
         }
     }
 
     /**
      * Check whether the server process is running
      */
-    @property bool running() {
+    @property bool running() @safe {
         synchronized (this) {
             if (processPipes.pid is null) return false;
 
@@ -203,7 +230,8 @@ class Server {
         }
     }
 
-    @property bool sharedRunning() shared {
+    /// Same as running but shared. D has its quirks
+    private @property bool sharedRunning() shared {
         return (cast(Server)this).running;
     }
 
@@ -249,7 +277,7 @@ class Server {
 
     private void log(string line, bool cache = true) {
         if (logPath is null) {
-            logPath = buildPath(config.application.logsPath, name ~ ".log");
+            logPath = config.application.buildLogPath(name ~ ".log");
             logs = DList!string(new string[LOG_LENGTH]);
         }
 
@@ -262,41 +290,31 @@ class Server {
         }
     }
 
-    private struct ServerStatus {
-        string hostname;
-        string address;
-        string map;
-        size_t humanPlayers = 0;
-        size_t botPlayers = 0;
-        size_t maxPlayers = 0;
-        string password;
-        string rconPassword;
-        bool hybernating = false;
-        bool running = false;
-        DateTime lastUpdate;
-
-        @property string connectString() {
-            return "connect %s; password \"%s\"; rcon_password \"%s\"".format(address, password, rconPassword);
-        }
-    }
-
-    private void sendStatusPoll() {
-        if (statusSent) {
-            // Status is already sent, waiting on watcher to read the result
-            return;
-        }
-        statusSent = true;
-        sendCMD("status");
-        sendCMD("sv_password");
-        sendCMD("rcon_password");
-    }
-
+    /**
+     * Reads a line asynchronously from the process's stdout
+     */
     private auto readline() {
         auto line = processPipes.stdout.readlnNoBlock();
         if (line == null) return null;
+        line = line[0..$-1]; // source uses CRLF and readlnNoBlock stops at LF
 
-        logInfo("Server '%s': %s", name, line);
+        log(line, true);
+        //logInfo("Server '%s': %s", name, line);
         return line;
+    }
+
+    private auto readlineRange(string firstLine) {
+        struct Range {
+            this(string f, Server s) {
+                front = f;
+                server = s;
+            }
+            string front;
+            Server server;
+            void popFront() { front = server.readline(); }
+            @property bool empty() { return front is null; }
+        }
+        return Range(firstLine, this);
     }
 
     private void watcher() shared {
@@ -304,7 +322,7 @@ class Server {
         while (sharedRunning) {
             try {
                 (cast(Server)this).watch();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 logError("'%s' Watcher: %s", name, e);
             }
         }
@@ -314,65 +332,16 @@ class Server {
     private void watch() {
         auto line = readline();
         if (line == null) {
-            Thread.sleep(100.dur!"msecs");
+            sleep(100.dur!"msecs");
             return;
         }
 
-        auto cacheLine = true;
-
-        // status
-        if (line.startsWith("hostname: ")) {
-            statusSent = false; // Allow another status update to be queried
-            status.running = true; // Once we read a status, the server is properly responding
-            status.lastUpdate = cast(DateTime)Clock.currTime();
-
-            cacheLine = false; // Don't output this, parse it instead
-
-            parseStatus(line);
-        } else if (matchVariable(line, "sv_password")) {
-            status.password = parseVariable(line);
-        } else if (matchVariable(line, "rcon_password")) {
-            status.rconPassword = parseVariable(line);
-        } else if (line == "Server is hibernating") {
-            status.hybernating = true;
-        } // TODO: wakeup
-        else if (line == "Killed") {
-            status.running = false;
-            statusSent = false;
-            sendStatusPoll();
+        auto range = readlineRange(line);
+        if (status.parse(range)) {
+            if (!status.running) {
+                status.sendPoll(this);
+            }
         }
-
-        log(line, cacheLine);
-    }
-
-    private void parseStatus(string line) {
-        status.hostname = line.split(":")[1].strip();
-        /*version =*/readline();
-        auto udpIp = readline();
-        auto udp = udpIp.matchFirst(`[0-9\.]+:[0-9]+`).front;
-        auto port = udp.split(":")[1];
-        auto ip = udpIp.matchFirst(`public ip: [0-9\.]+`).front.split(":")[1].strip();
-        status.address = "%s:%s".format(ip, port);
-        /*steamID = */readline();
-        /*account = */readline();
-        auto map = readline();
-        status.map = map.split(":")[1].strip().split(" ")[0];
-        /*tags = */readline();
-        auto players = readline();
-        logInfo(players);
-        status.humanPlayers = matchFirst(players, `\d+ humans`).front.split(" ")[0].to!size_t;
-        status.botPlayers = matchFirst(players, `\d+ bots`).front.split(" ")[0].to!size_t;
-        status.maxPlayers = matchFirst(players, `\d+ max`).front.split(" ")[0].to!size_t;
-
-        // TODO: parse players
-    }
-
-    private bool matchVariable(string line, string name) {
-        return line.startsWith(`"%s" = "`.format(name));
-    }
-
-    private string parseVariable(string line) {
-        return line.split(" = ")[1].split(`"`)[1];
     }
 
     private void poller() shared {
@@ -380,7 +349,7 @@ class Server {
         while (sharedRunning) {
             try {
                 (cast(Server)this).poll();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 logError("'%s' Poller: %s", name, e);
             }
         }
@@ -389,9 +358,9 @@ class Server {
 
     private void poll() {
         if (status.running) {
-            sendStatusPoll();
+            status.sendPoll(this);
         }
 
-        Thread.sleep(POLL_INTERVAL);
+        sleep(POLL_INTERVAL);
     }
 }

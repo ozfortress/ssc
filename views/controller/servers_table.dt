@@ -19,6 +19,6 @@ tr
         td= server.status.address
         td= server.status.map
         td= p.playerStatus
-        td(class=p.statusClass)= p.statusName
+        td(class=p.statusClass)= p.statusDisplay
         td= p.bookingStatus
         td(class=p.lastUpdateClass)= p.lastUpdate

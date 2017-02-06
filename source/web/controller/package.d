@@ -6,7 +6,7 @@ public {
 }
 
 mixin template WebInterface() {
-    import config.keys;
+    static import config.keys;
     string key;
     string client;
 

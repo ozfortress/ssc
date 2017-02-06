@@ -5,21 +5,11 @@ block head
 
 block content
     - import std.format;
+    - string url;
 
     h1
         a(href="/controller?key=#{key}") servers
         | /#{server.name}
-
-    .panel.panel-danger
-        .panel-heading Control
-        .panel-body
-            - auto url = "/controller/servers/%s/restart?key=%s".format(server.name, key);
-            form(role="form", action=url, method="post")
-                input.btn.btn-default(type="submit", value="Restart")
-
-            - url = "/controller/servers/%s/stop?key=%s".format(server.name, key);
-            form(role="form", action=url, method="post")
-                input.btn.btn-default(type="submit", value="Stop")
 
     .panel.panel-info
         .panel-heading Status
@@ -35,6 +25,17 @@ block content
                     input.form-control(type="text", name="command", autofocus)
                 .col-md-1
                     input.btn.btn-default(type="submit", value="Execute")
+
+    .panel.panel-danger
+        .panel-heading Control
+        .panel-body
+            - url = "/controller/servers/%s/restart?key=%s".format(server.name, key);
+            form(role="form", action=url, method="post")
+                input.btn.btn-default(type="submit", value="Restart")
+
+            - url = "/controller/servers/%s/stop?key=%s".format(server.name, key);
+            form(role="form", action=url, method="post")
+                input.btn.btn-default(type="submit", value="Stop")
 
     script.
         function updateStatus() {

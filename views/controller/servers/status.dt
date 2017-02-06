@@ -19,14 +19,14 @@ table.table
         td= p.playerStatus
     tr(class=p.statusClass)
         th Status
-        td= p.statusName
+        td= p.statusDisplay
     tr
         th Booking
         td= p.bookingStatus
     tr
         th Connect String
         td
-            code= server.status.connectString
+            code= p.connectString
     tr(class=p.lastUpdateClass)
         th Last Poll
         td= p.lastUpdate

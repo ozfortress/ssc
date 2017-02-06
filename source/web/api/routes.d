@@ -2,16 +2,20 @@ module web.api.routes;
 
 import vibe.d;
 
-static auto router() {
-    auto router = new URLRouter("/api");
+import web.api.v1;
 
-    router.any("/v1/*", v1_router());
+static auto router() {
+    auto router = new URLRouter();
+
+    router.any("/api/v1/*", v1_router());
 
     return router;
 }
 
 static auto v1_router() {
-    auto router = new URLRouter("/api/v1");
+    auto router = new URLRouter();
+
+    router.registerRestInterface(new SSCV1APIImpl());
 
     return router;
 }

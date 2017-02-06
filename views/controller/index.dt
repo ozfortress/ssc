@@ -26,6 +26,7 @@ block content
         setInterval(updateBookings, 2000);
 
     - import std.string;
+    - string url;
 
     h1 Source Server Controller
 
@@ -41,7 +42,7 @@ block content
 
         .panel-body
             h3 Create Booking
-            - auto url = "/controller/bookings?key=%s".format(key);
+            - url = "/controller/bookings?key=%s".format(key);
             form(role="form", action=url, method="post")
                 .row
                     .col-md-6
@@ -51,4 +52,9 @@ block content
                     .col-md-1
                         input.btn.btn-default(type="submit", value="Create")
 
-
+    .panel.panel-danger
+        .panel-heading Control
+        .panel-body
+            - url = "/controller/reload_servers?key=%s".format(key);
+            form(role="form", action=url, method="post")
+                input.btn.btn-default(type="submit", value="Reload Server Configuration")

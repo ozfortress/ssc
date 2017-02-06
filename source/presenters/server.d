@@ -1,7 +1,10 @@
 module presenters.server;
+import presenters;
 
 import std.string;
 import std.datetime;
+
+import vibe.d;
 
 import models;
 
@@ -11,6 +14,27 @@ struct ServerPresenter {
 
     this(Server server) {
         this.server = server;
+    }
+
+    @property auto booking() {
+        return BookingPresenter(server.booking);
+    }
+
+    @property string connectString() {
+        auto status = server.status;
+        return "connect %s; password \"%s\"; rcon_password \"%s\"".format(
+            status.address, status.password, status.rconPassword);
+    }
+
+    string statusDisplay() {
+        auto name = statusName;
+        if (server.dirty) {
+            name ~= " (dirty)";
+        }
+        if (server.willDelete) {
+            name ~= " (will delete)";
+        }
+        return name;
     }
 
     string statusName() {
@@ -71,5 +95,18 @@ struct ServerPresenter {
             return "warning";
         }
         return "success";
+    }
+
+    Json toJson(bool includeBooking = true) {
+        auto j = Json([
+            "name": Json(server.name),
+            "status": Json(statusName),
+            "address": Json(server.status.address),
+            "connect-string": Json(connectString),
+        ]);
+
+        if (includeBooking) j["booking"] = server.booking is null ? Json.undefined : booking.toJson;
+
+        return j;
     }
 }
