@@ -22,6 +22,10 @@ class Booking {
         return store.findBy!"server"(server);
     }
 
+    static auto find(string client, string user) {
+        return store.get(client ~ ":" ~ user);
+    }
+
     static Booking create(string client, string user, DateTime endsAt) {
         auto servers = Server.available;
         enforce(!servers.empty, "No server available");
