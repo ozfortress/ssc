@@ -2,14 +2,10 @@ module models.server;
 import models;
 
 import core.thread;
-import std.path;
-import std.conv;
 import std.file;
 import std.array;
-import std.regex;
-import std.format;
+import std.string;
 import std.process;
-import std.datetime;
 import std.algorithm;
 import std.container;
 
@@ -182,7 +178,7 @@ class Server {
             dirty = false;
             reset();
             statusSent = false;
-            sendStatusPoll();
+            status.sendPoll(this);
         }
     }
 
@@ -198,7 +194,8 @@ class Server {
         }
     }
 
-    @property bool sharedRunning() shared {
+    /// Same as running but shared. D has its quirks
+    private @property bool sharedRunning() shared {
         return (cast(Server)this).running;
     }
 
@@ -244,7 +241,7 @@ class Server {
 
     private void log(string line, bool cache = true) {
         if (logPath is null) {
-            logPath = buildPath(config.application.logsPath, name ~ ".log");
+            logPath = config.application.buildLogPath(name ~ ".log");
             logs = DList!string(new string[LOG_LENGTH]);
         }
 
@@ -257,41 +254,31 @@ class Server {
         }
     }
 
-    private struct ServerStatus {
-        string hostname;
-        string address;
-        string map;
-        size_t humanPlayers = 0;
-        size_t botPlayers = 0;
-        size_t maxPlayers = 0;
-        string password;
-        string rconPassword;
-        bool hybernating = false;
-        bool running = false;
-        DateTime lastUpdate;
-
-        @property string connectString() {
-            return "connect %s; password \"%s\"; rcon_password \"%s\"".format(address, password, rconPassword);
-        }
-    }
-
-    private void sendStatusPoll() {
-        if (statusSent) {
-            // Status is already sent, waiting on watcher to read the result
-            return;
-        }
-        statusSent = true;
-        sendCMD("status");
-        sendCMD("sv_password");
-        sendCMD("rcon_password");
-    }
-
+    /**
+     * Reads a line asynchronously from the process's stdout
+     */
     private auto readline() {
         auto line = processPipes.stdout.readlnNoBlock();
         if (line == null) return null;
+        line = line[0..$-1]; // source uses CRLF and readlnNoBlock stops at LF
 
-        logInfo("Server '%s': %s", name, line);
+        log(line, true);
+        //logInfo("Server '%s': %s", name, line);
         return line;
+    }
+
+    private auto readlineRange(string firstLine) {
+        struct Range {
+            this(string f, Server s) {
+                front = f;
+                server = s;
+            }
+            string front;
+            Server server;
+            void popFront() { front = server.readline(); }
+            @property bool empty() { return front is null; }
+        }
+        return Range(firstLine, this);
     }
 
     private void watcher() shared {
@@ -313,62 +300,12 @@ class Server {
             return;
         }
 
-        auto cacheLine = true;
-
-        // status
-        if (line.startsWith("hostname: ")) {
-            statusSent = false; // Allow another status update to be queried
-            status.running = true; // Once we read a status, the server is properly responding
-            status.lastUpdate = cast(DateTime)Clock.currTime();
-
-            cacheLine = false; // Don't output this, parse it instead
-
-            parseStatus(line);
-        } else if (matchVariable(line, "sv_password")) {
-            status.password = parseVariable(line);
-        } else if (matchVariable(line, "rcon_password")) {
-            status.rconPassword = parseVariable(line);
-        } else if (line == "Server is hibernating") {
-            status.hybernating = true;
-        } // TODO: wakeup
-        else if (line == "Killed") {
-            status.running = false;
-            statusSent = false;
-            sendStatusPoll();
+        auto range = readlineRange(line);
+        if (status.parse(range)) {
+            if (!status.running) {
+                status.sendPoll(this);
+            }
         }
-
-        log(line, cacheLine);
-    }
-
-    private void parseStatus(string line) {
-        status.hostname = line.split(":")[1].strip();
-        /*version =*/readline();
-        auto udpIp = readline();
-        auto udp = udpIp.matchFirst(`[0-9\.]+:[0-9]+`).front;
-        auto port = udp.split(":")[1];
-        auto ip = udpIp.matchFirst(`public ip: [0-9\.]+`).front.split(":")[1].strip();
-        status.address = "%s:%s".format(ip, port);
-        /*steamID = */readline();
-        /*account = */readline();
-        auto map = readline();
-        status.map = map.split(":")[1].strip().split(" ")[0];
-        /*tags = */readline();
-        auto players = readline();
-        if (players.startsWith("sourcetv")) players = readline();
-        logInfo(players);
-        status.humanPlayers = matchFirst(players, `\d+ humans`).front.split(" ")[0].to!size_t;
-        status.botPlayers = matchFirst(players, `\d+ bots`).front.split(" ")[0].to!size_t;
-        status.maxPlayers = matchFirst(players, `\d+ max`).front.split(" ")[0].to!size_t;
-
-        // TODO: parse players
-    }
-
-    private bool matchVariable(string line, string name) {
-        return line.startsWith(`"%s" = "`.format(name));
-    }
-
-    private string parseVariable(string line) {
-        return line.split(" = ")[1].split(`"`)[1];
     }
 
     private void poller() shared {
@@ -385,7 +322,7 @@ class Server {
 
     private void poll() {
         if (status.running) {
-            sendStatusPoll();
+            status.sendPoll(this);
         }
 
         sleep(POLL_INTERVAL);
