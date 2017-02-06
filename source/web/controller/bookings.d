@@ -21,7 +21,6 @@ class BookingsInterface {
 
     @path("")
     void postCreate(scope HTTPServerRequest req, string user, ushort duration) {
-        logInfo("Yay %s", req.params);
         requireAuthentication(req);
 
         auto now = cast(DateTime)Clock.currTime();
