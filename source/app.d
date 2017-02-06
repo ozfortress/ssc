@@ -9,7 +9,7 @@ shared static this() {
 	auto settings = config.application.serverSettings;
 
     // Log access to the log file
-    settings.accessLogToConsole = true;
+    //settings.accessLogToConsole = true;
     settings.accessLogFile = config.application.logFile;
 
     // Log to the proper log file
