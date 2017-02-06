@@ -45,7 +45,7 @@ class Server {
     }
 
     private static auto readServerConfig() {
-        auto json = parseJSON(readText(configPath("servers.json")));
+        auto json = parseJSON(readText(buildConfigPath("servers.json")));
 
         // Merge in default options
         auto defaultOptions = json["default-options"];
