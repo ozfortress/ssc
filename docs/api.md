@@ -1,0 +1,91 @@
+# API (V1)
+
+The base path to all requests is: /api/v1
+
+All requests must include a valid `key` parameter as part of the query in the url.
+
+## Servers
+
+### GET `/servers/`
+
+Returns a list of servers and their state.
+
+Example:
+
+```json
+{
+  "length": 2,
+  "servers": [
+    {
+      "address": "",
+      "connect-string": "connect ; password \"\"; rcon_password \"\"",
+      "name": "ozfortress-1",
+      "status": "Stopped"
+    },
+    {
+      "address": "40.126.229.205:27016",
+      "connect-string": "connect 40.126.229.205:27016; password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"; rcon_password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"",
+      "name": "ozfortress-2",
+      "status": "Active"
+    }
+  ]
+}
+```
+
+## Bookings
+
+### POST `/bookings/`
+
+Creates a new booking.
+
+Returns booking information.
+
+Query Parameters:
+- `user`: The user to book a server under.
+- `hours`: The number of hours to book a server for.
+
+Example:
+
+```json
+{
+  "user": "foo",
+  "client": "client-name",
+  "server": {
+    "address": "40.126.229.205:27016",
+    "connect-string": "connect 40.126.229.205:27016; password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"; rcon_password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"",
+    "name": "ozfortress-2",
+    "status": "Active"
+  },
+  "startedAt": "2017-02-06T12:11:52",
+  "endsAt": "2017-02-06T14:11:52"
+}
+```
+
+### GET `/bookings/:user`
+
+Gets a booking by the user the booking was made under.
+
+Returns booking information.
+
+Example:
+
+```json
+{
+  "user": "foo",
+  "client": "client-name",
+  "server": {
+    "address": "40.126.229.205:27016",
+    "connect-string": "connect 40.126.229.205:27016; password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"; rcon_password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"",
+    "name": "ozfortress-2",
+    "status": "Active"
+  },
+  "startedAt": "2017-02-06T12:11:52",
+  "endsAt": "2017-02-06T14:11:52"
+}
+```
+
+### DELETE `/bookings/:user`
+
+Ends a booking made under a user.
+
+Returns nothing.
