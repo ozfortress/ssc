@@ -67,4 +67,3 @@ class BookingAPIImpl : BookingV1API {
         enforceHTTP(false, HTTPStatus.noContent);
     }
 }
-

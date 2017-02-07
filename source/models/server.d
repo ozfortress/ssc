@@ -69,7 +69,7 @@ class Server {
         // Mark servers not found in the new config for deletion
         foreach (server; store.all) {
             if (server.name !in servers) {
-                if (!server.running || server.bookable && server.booking is null) {
+                if (!server.running || (server.bookable && server.booking is null)) {
                     server.remove();
                 } else {
                     server.willDelete = true;
@@ -182,7 +182,7 @@ class Server {
     void restart() {
         synchronized (this) {
             auto booking = this.booking;
-            if (booking !is null) booking.end;
+            if (booking !is null) booking.end();
 
             if (running) kill();
             spawn();

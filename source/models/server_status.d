@@ -78,10 +78,10 @@ struct ServerStatus {
     private void parseStatus(R)(R range) {
         foreach (line; range) {
             auto split = line.splitter(":");
-            string head = split.front.strip();
+            const head = split.front.strip();
             split.popFront();
             if (split.empty) break;
-            string value = split.join(":").strip();
+            const value = split.join(":").strip();
 
             switch (head) {
                 case "hostname":
@@ -116,7 +116,7 @@ struct ServerStatus {
         }*/
     }
 
-    private string parseUDPIP(string line) {
+    private string parseUDPIP(const string line) {
         auto udp = line.matchFirst(`[0-9\.]+:[0-9]+`).front;
         auto port = udp.split(":")[1];
         auto ip = line.matchFirst(`public ip: [0-9\.]+`).front.split(":")[1].strip();
