@@ -23,12 +23,13 @@ class Booking {
         return store.get(client ~ ":" ~ user);
     }
 
-    static Booking create(string client, string user, DateTime endsAt) {
+    static Booking create(string client, string user, Duration duration) {
         auto servers = Server.allAvailable;
         enforce(!servers.empty, "No server available");
         auto server = servers.front;
         enforce(server.running); // Sanity
 
+        auto endsAt = cast(DateTime)Clock.currTime() + duration;
         auto booking = new Booking(client, user, server, endsAt);
         store.add(booking);
 

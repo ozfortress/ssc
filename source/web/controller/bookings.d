@@ -23,10 +23,8 @@ class BookingsInterface {
     void postCreate(scope HTTPServerRequest req, string user, ushort duration) {
         requireAuthentication(req);
 
-        auto now = cast(DateTime)Clock.currTime();
-        auto endsAt = now + duration.dur!"hours";
         try {
-            Booking.create(client, user, endsAt);
+            Booking.create(client, user, duration.dur!"hours");
         } catch (StoreException e) {
             enforceHTTP(false, HTTPStatus.conflict, "Duplicate client/user");
         }
