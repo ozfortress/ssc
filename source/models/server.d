@@ -34,7 +34,7 @@ class Server {
     }
 
     static @property auto available() {
-        return all.filter!(s => s.booking is null && s.bookable);
+        return all.filter!(s => s.booking is null && s.bookable && s.running);
     }
 
     private static auto readServerConfig() {
@@ -58,7 +58,6 @@ class Server {
             servers[server.name] = server;
 
             // Don't override existing servers, reload them with new settings instead
-            logInfo("%s %s", server.name, store.all);
             auto old = store.get(server.name);
             if (old is null) {
                 server.create();

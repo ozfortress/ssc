@@ -27,6 +27,7 @@ class Booking {
         auto servers = Server.available;
         enforce(!servers.empty, "No server available");
         auto server = servers.front;
+        enforce(server.running); // Sanity
 
         auto booking = new Booking(client, user, server, endsAt);
         store.add(booking);
@@ -65,9 +66,6 @@ class Booking {
         auto now = cast(DateTime)Clock.currTime();
         auto timeout = endsAt - now;
         endTimer = setTimer(timeout, &end, false);
-
-        // Start the server after successfully creating a booking
-        if (!server.running) server.spawn();
 
         // Make sure the server is in a stable state
         server.reset();
