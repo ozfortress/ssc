@@ -24,7 +24,7 @@ class Booking {
     }
 
     static Booking create(string client, string user, DateTime endsAt) {
-        auto servers = Server.available;
+        auto servers = Server.allAvailable;
         enforce(!servers.empty, "No server available");
         auto server = servers.front;
         enforce(server.running); // Sanity

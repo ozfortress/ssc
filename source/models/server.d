@@ -33,8 +33,8 @@ class Server {
         return store.all;
     }
 
-    static @property auto available() {
-        return all.filter!(s => s.booking is null && s.bookable && s.running);
+    static @property auto allAvailable() {
+        return all.filter!(s => s.available);
     }
 
     private static auto readServerConfig() {
@@ -106,6 +106,14 @@ class Server {
         return Booking.bookingFor(cast(Server)this);
     }
 
+    @property auto available() {
+        return bookable && booking is null && active;
+    }
+
+    @property auto active() {
+        return running && status.running;
+    }
+
     this() {
     }
 
@@ -138,7 +146,9 @@ class Server {
     void reload(Server config) {
         synchronized (this) {
             if (executable != config.executable || options != config.options) {
-                dirty = true;
+                // Reset if we wouldn't disturb anyone
+                if (available) reset();
+                else dirty = true;
             }
 
             executable = config.executable;
