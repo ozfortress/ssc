@@ -35,5 +35,3 @@ string readlnNoBlock(File file) {
 
     return cast(string)buffer;
 }
-
-

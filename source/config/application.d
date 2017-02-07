@@ -6,10 +6,12 @@ import std.string;
 
 import vibe.d;
 
-import config.env;
 import util.json;
+import config.env;
 
 const CONFIG_PATH = "config";
+const CONFIG_FILE = "application.json";
+const ENVIRONMENTS_PATH = "environments";
 
 /**
  * Settings struct for easy json parsing
@@ -30,8 +32,8 @@ private struct Settings {
 private shared Settings _settings;
 
 shared static this() {
-    auto json = readJSON(buildConfigPath("environments", env ~ ".json"));
-    auto common = readJSON(buildConfigPath("application.json"));
+    auto json = readJSON(buildConfigPath(ENVIRONMENTS_PATH, envName ~ ".json"));
+    auto common = readJSON(buildConfigPath(CONFIG_FILE));
     json.merge(common);
 
     _settings = cast(shared)json.fromJSON!Settings;
@@ -61,7 +63,7 @@ auto buildLogPath(string[] args...) {
 }
 
 @property auto logFile() {
-    return buildPath(logsPath(), env ~ ".log");
+    return buildPath(logsPath(), envName ~ ".log");
 }
 
 @property auto logLevel() {

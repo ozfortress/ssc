@@ -9,10 +9,7 @@ import vibe.d;
 import store;
 
 class Booking {
-    shared static this() {
-        store = new typeof(store);
-    }
-    private static shared Store!(Booking, "id") store;
+    package static shared Store!(Booking, "id") store; // Initialized in package.d
 
     static @property auto all() {
         return store.all;

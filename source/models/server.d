@@ -11,7 +11,7 @@ import std.container;
 
 import vibe.d;
 import vibe.stream.stdio;
-import jsonizer;
+import jsonizer : fromJSON;
 
 import store;
 import util.io;
@@ -23,10 +23,7 @@ class Server {
     static const POLL_INTERVAL = 15.dur!("seconds");
     static const LOG_LENGTH = 30;
 
-    shared static this() {
-        store = new typeof(store);
-    }
-    private static shared Store!(Server, "name") store;
+    package static shared Store!(Server, "name") store; // Initialized in package.d
 
     static Server get(string name) {
         return store.get(name);
@@ -41,7 +38,7 @@ class Server {
     }
 
     private static auto readServerConfig() {
-        auto json = parseJSON(readText(buildConfigPath("servers.json")));
+        auto json = readJSON(buildConfigPath("servers.json"));
 
         // Merge in default options
         auto defaultOptions = json["default-options"];
