@@ -17,6 +17,7 @@ import store;
 import util.io;
 import util.json;
 import util.random;
+import util.source;
 import config.application;
 
 class Server {
@@ -84,26 +85,26 @@ class Server {
         string executable;
         string[string] options;
 
-        @jsonize("auto-start") bool autoStart = true;
-        bool bookable = true;
-        @jsonize("reset-command") string resetCommand = "";
-        @jsonize("log-path") string logPath = null;
+        @jsonize("auto-start")            bool autoStart = true;
+        @jsonize("bookable")              bool bookable = true;
+        @jsonize("auto-password")         bool autoPassword = true;
+        @jsonize("reset-command")         string resetCommand = null;
+        @jsonize("booking-start-command") string bookingStartCommand = null;
+        @jsonize("booking-end-command")   string bookingEndCommand = null;
+        @jsonize("log-path")              string logPath = null;
     }
 
     bool dirty = true;
     bool willDelete = false;
     DList!string logs;
     ServerStatus status;
+    Booking booking = null;
 
     private {
         ProcessPipes processPipes;
         Task processWatcher;
         Task processPoller;
         bool statusSent = false;
-    }
-
-    @property auto booking() {
-        return Booking.bookingFor(cast(Server)this);
     }
 
     @property auto available() {
@@ -118,12 +119,31 @@ class Server {
     }
 
     /**
-     * Initialize the server, called when a server is ready to be added to the store
+     * Hook for when a booking starts
      */
-    private void create() {
-        store.add(this);
+    void onBookingStart(Booking booking) {
+        this.booking = booking;
 
-        if (autoStart) spawn();
+        reset();
+        if (bookingStartCommand !is null) {
+            auto command = bookingStartCommand.replace("{client}", booking.client)
+                                              .replace("{user}", booking.userEscaped);
+            sendCMD(command);
+        }
+    }
+
+    /**
+     * Hook for when a booking ends
+     */
+    void onBookingEnd(Booking booking) {
+        this.booking = null;
+
+        reset();
+        if (bookingEndCommand !is null) {
+            auto command = bookingEndCommand.replace("{client}", booking.client)
+                                            .replace("{user}", booking.userEscaped);
+            sendCMD(command);
+        }
     }
 
     /**
@@ -135,29 +155,8 @@ class Server {
         status.password = randomBase64(12);
         status.rconPassword = randomBase64(12);
 
-        sendCMD(`sv_password "%s"`.format(status.password));
-        sendCMD(`rcon_password "%s"`.format(status.rconPassword));
-    }
-
-    /**
-     * Reload the server configuration (using another server instance)
-     * Use to update settings on a running server by setting the dirty flag and waiting for a time to restart
-     */
-    void reload(Server config) {
-        synchronized (this) {
-            if (executable != config.executable || options != config.options) {
-                // Reset if we wouldn't disturb anyone
-                if (available) reset();
-                else dirty = true;
-            }
-
-            executable = config.executable;
-            options = config.options;
-            autoStart = config.autoStart;
-            bookable = config.bookable;
-            resetCommand = config.resetCommand;
-            logPath = config.logPath;
-        }
+        sendCMD(`sv_password %s`, status.password);
+        sendCMD(`rcon_password %s`, status.rconPassword);
     }
 
     /**
@@ -166,13 +165,13 @@ class Server {
      */
     void reset(string reason = "Server Reset") {
         enforce(running);
-        sendCMD(`kickall "%s"`.format(reason));
+        sendCMD(`kickall %s`, reason);
 
         if (dirty) {
             restart();
         } else {
             if (resetCommand !is null) sendCMD(resetCommand);
-            generatePasswords();
+            if (autoPassword) generatePasswords();
         }
     }
 
@@ -261,9 +260,28 @@ class Server {
     }
 
     /**
+     * Send a command to the server via a source console
+     */
+    void sendCMD(string command, string[] args...) {
+        synchronized (this) {
+            processPipes.stdin.writeln(formatCommand(command, args));
+            processPipes.stdin.flush();
+        }
+    }
+
+    /**
+     * Initialize the server, called when a server is ready to be added to the store
+     */
+    private void create() {
+        store.add(this);
+
+        if (autoStart) spawn();
+    }
+
+    /**
      * Remove the server, killing if necessary
      */
-    void remove() {
+    private void remove() {
         synchronized (this) {
             if (running) kill();
 
@@ -272,15 +290,27 @@ class Server {
     }
 
     /**
-     * Send a command to the server via a source console
+     * Reload the server configuration (using another server instance)
+     * Use to update settings on a running server by setting the dirty flag and waiting for a time to restart
      */
-    void sendCMD(string value) {
+    private void reload(Server config) {
         synchronized (this) {
-            processPipes.stdin.writeln(value);
-            processPipes.stdin.flush();
+            if (executable != config.executable || options != config.options) {
+                // Reset if we wouldn't disturb anyone
+                if (available) reset();
+                else dirty = true;
+            }
+
+            executable = config.executable;
+            options = config.options;
+            autoStart = config.autoStart;
+            bookable = config.bookable;
+            resetCommand = config.resetCommand;
+            logPath = config.logPath;
         }
     }
 
+    /// Writes to the server log file
     private void log(string line, bool cache = true) {
         if (logPath is null) {
             logPath = config.application.buildLogPath(name ~ ".log");
@@ -323,8 +353,9 @@ class Server {
         return Range(firstLine, this);
     }
 
+    /// Watcher thread for the server process
     private void watcher() shared {
-        logInfo("Started watcher for %s", name);
+        logInfo("Started watcher for '%s'", name);
         while (sharedRunning) {
             try {
                 (cast(Server)this).watch();
@@ -332,7 +363,7 @@ class Server {
                 logError("'%s' Watcher: %s", name, e);
             }
         }
-        logInfo("Terminated watcher for %s", name);
+        logInfo("Terminated watcher for '%s'", name);
     }
 
     private void watch() {
@@ -350,6 +381,7 @@ class Server {
         }
     }
 
+    /// Poller thread for the server process
     private void poller() shared {
         logInfo("Started poller for %s", name);
         while (sharedRunning) {

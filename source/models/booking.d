@@ -1,6 +1,7 @@
 module models.booking;
 import models;
 
+import std.base64;
 import std.datetime;
 import std.exception;
 
@@ -54,6 +55,10 @@ class Booking {
         return endsAt - startedAt;
     }
 
+    @property auto userEscaped() {
+        return Base64URL.encode(user);
+    }
+
     private this(string client, string user, Server server, DateTime endsAt) {
         this.client = client;
         this.user = user;
@@ -68,13 +73,13 @@ class Booking {
         auto timeout = endsAt - now;
         endTimer = setTimer(timeout, &end, false);
 
-        // Make sure the server is in a stable state
-        server.reset();
+        server.onBookingStart(this);
     }
 
     void end() {
         logInfo("Ending booking for %s", id);
+        server.onBookingEnd(this);
+
         Booking.store.remove(this);
-        server.reset();
     }
 }
