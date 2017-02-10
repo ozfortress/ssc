@@ -4,6 +4,7 @@ import core.sys.posix.fcntl;
 import core.sys.posix.unistd;
 import core.stdc.errno;
 import std.stdio;
+import std.regex;
 
 /**
  * Marks the file as non-blocking (O_NONBLOCK)
@@ -35,5 +36,3 @@ string readlnNoBlock(File file) {
 
     return cast(string)buffer;
 }
-
-

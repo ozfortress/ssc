@@ -1,4 +1,5 @@
 {
+    // Gets added to the options of any server
     "default-options": {
         "+ip": "0.0.0.0",
         "-game": "tf",
@@ -7,10 +8,19 @@
 
     "servers": [
         {
-            "name": "server-name",
-            "executable": "/home/steam/.steam/tf2/srcds_run",
-            "reset-command": "reset",
-            "options": {
+            "name": "server-name", // The name of the server
+            "executable": "/home/steam/.steam/tf2/srcds_run", // The executable used to run the server
+            "auto-start": true, // Starts the server when ssc starts, true by default
+            "bookable": true, // Allows booking of the server, true by default
+            "auto-password": true, // Automatically sets secure passwords on reset (both sv_password and rcon_password) (done after reset-command is run), true by default
+            "reset-command": "exec reset.cfg", // Run when a server starts, is booked or is unbooked
+            // The following 2 commands allow arguments for when a booking starts, ends.
+            // Arguments are string replaced eg: {argument}
+            // {user} argument is base64 encoded with -_=
+            "booking-start-command": "exec start_booking.cfg; say {client}; say {user}", // Run when a booking starts, after reset command
+            "booking-end-command": "exec end_booking.cfg; say {client}; say {user}", // Run when a booking ends, after reset command
+            "log-path": "/var/ssc/logs/server-name.log", // Custom log file. Defaults to logs/<server-name>.log
+            "options": { // Options passed to the executable, is merged in with default-options
                 "-port": "27015"
             }
         }

@@ -104,7 +104,7 @@ shared class Store(Element, string primaryField = "") {
 
     private bool matchFields(fields...)(FieldTypes!fields values, Element element) {
         foreach (index, field; fields) {
-            auto value = mixin("element."~field);
+            const value = mixin("element."~field);
 
             if (value != values[index]) return false;
         }

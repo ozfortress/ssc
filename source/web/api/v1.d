@@ -42,12 +42,9 @@ class ServerAPIImpl : ServerV1API {
 
 class BookingAPIImpl : BookingV1API {
     Json create(string client, string user, ushort hours) {
-        auto now = cast(DateTime)Clock.currTime();
-        auto endsAt = now + hours.dur!"hours";
-
         Booking booking;
         try {
-            booking = Booking.create(client, user, endsAt);
+            booking = Booking.create(client, user, hours.dur!"hours");
         } catch (StoreException e) {
             enforceHTTP(false, HTTPStatus.conflict, "Duplicate client/user");
         }
@@ -70,4 +67,3 @@ class BookingAPIImpl : BookingV1API {
         enforceHTTP(false, HTTPStatus.noContent);
     }
 }
-

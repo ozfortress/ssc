@@ -1,6 +1,7 @@
 module models.booking;
 import models;
 
+import std.base64;
 import std.datetime;
 import std.exception;
 
@@ -9,10 +10,7 @@ import vibe.d;
 import store;
 
 class Booking {
-    shared static this() {
-        store = new typeof(store);
-    }
-    private static shared Store!(Booking, "id") store;
+    package static shared Store!(Booking, "id") store; // Initialized in package.d
 
     static @property auto all() {
         return store.all;
@@ -26,11 +24,13 @@ class Booking {
         return store.get(client ~ ":" ~ user);
     }
 
-    static Booking create(string client, string user, DateTime endsAt) {
-        auto servers = Server.available;
+    static Booking create(string client, string user, Duration duration) {
+        auto servers = Server.allAvailable;
         enforce(!servers.empty, "No server available");
         auto server = servers.front;
+        enforce(server.running); // Sanity
 
+        auto endsAt = cast(DateTime)Clock.currTime() + duration;
         auto booking = new Booking(client, user, server, endsAt);
         store.add(booking);
 
@@ -55,6 +55,10 @@ class Booking {
         return endsAt - startedAt;
     }
 
+    @property auto userEscaped() {
+        return Base64URL.encode(cast(ubyte[])user);
+    }
+
     private this(string client, string user, Server server, DateTime endsAt) {
         this.client = client;
         this.user = user;
@@ -69,16 +73,13 @@ class Booking {
         auto timeout = endsAt - now;
         endTimer = setTimer(timeout, &end, false);
 
-        // Start the server after successfully creating a booking
-        if (!server.running) server.spawn();
-
-        // Make sure the server is in a stable state
-        server.reset();
+        server.onBookingStart(this);
     }
 
     void end() {
         logInfo("Ending booking for %s", id);
+        server.onBookingEnd(this);
+
         Booking.store.remove(this);
-        server.reset();
     }
 }
