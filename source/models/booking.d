@@ -56,7 +56,7 @@ class Booking {
     }
 
     @property auto userEscaped() {
-        return Base64URL.encode(user);
+        return Base64URL.encode(cast(ubyte[])user);
     }
 
     private this(string client, string user, Server server, DateTime endsAt) {
