@@ -155,8 +155,8 @@ class Server {
         status.password = randomBase64(12);
         status.rconPassword = randomBase64(12);
 
-        sendCMD(`sv_password %s`, status.password);
-        sendCMD(`rcon_password %s`, status.rconPassword);
+        sendCMD("sv_password", status.password);
+        sendCMD("rcon_password", status.rconPassword);
     }
 
     /**
@@ -165,7 +165,7 @@ class Server {
      */
     void reset(string reason = "Server Reset") {
         enforce(running);
-        sendCMD(`kickall %s`, reason);
+        sendCMD("kickall", reason);
 
         if (dirty) {
             restart();

@@ -78,6 +78,7 @@ struct ServerStatus {
     private void parseStatus(R)(R range) {
         foreach (line; range) {
             auto split = line.splitter(":");
+            if (split.empty) break;
             const head = split.front.strip();
             split.popFront();
             if (split.empty) break;

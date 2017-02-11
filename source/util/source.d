@@ -5,7 +5,8 @@ import std.string;
 import std.algorithm;
 
 string formatCommand(string command, string[] args...) {
-    return command.format(args.map!formatArgument.array);
+    if (args.empty) return command;
+    return `%s %s`.format(command, args.map!formatArgument.join(" "));
 }
 
 string formatArgument(string argument) {
