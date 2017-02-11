@@ -6,6 +6,7 @@ import std.file;
 import std.array;
 import std.string;
 import std.process;
+import std.datetime;
 import std.algorithm;
 import std.container;
 
@@ -102,8 +103,8 @@ class Server {
 
     private {
         ProcessPipes processPipes;
-        Task processWatcher;
-        Task processPoller;
+        Thread processWatcher;
+        Thread processPoller;
         bool statusSent = false;
     }
 
@@ -179,13 +180,11 @@ class Server {
      * Restart the server, killing and respawning
      */
     void restart() {
-        synchronized (this) {
-            auto booking = this.booking;
-            if (booking !is null) booking.end();
+        auto booking = this.booking;
+        if (booking !is null) booking.end();
 
-            if (running) kill();
-            spawn();
-        }
+        if (running) kill();
+        spawn();
     }
 
     /**
@@ -213,8 +212,8 @@ class Server {
             // Set the process's stdout as non-blocking
             processPipes.stdout.markNonBlocking();
 
-            runWorkerTaskH!(Server.watcher)(cast(shared)this);
-            runWorkerTaskH!(Server.poller)(cast(shared)this);
+            processWatcher = new Thread(() => this.watcher).start();
+            processPoller = new Thread(() => this.poller).start();
 
             dirty = false;
             reset();
@@ -235,11 +234,6 @@ class Server {
         }
     }
 
-    /// Same as running but shared. D has its quirks
-    private @property bool sharedRunning() shared {
-        return (cast(Server)this).running;
-    }
-
     /**
      * Kill the running server
      */
@@ -252,11 +246,14 @@ class Server {
             processPipes.stdout.close();
             processPipes.pid.kill();
             processPipes.pid.wait();
+            processPipes = typeof(processPipes).init;
             enforce(!running);
 
             // Reset status
             status = ServerStatus();
         }
+        processWatcher.join();
+        processPoller.join();
     }
 
     /**
@@ -330,7 +327,8 @@ class Server {
      * Reads a line asynchronously from the process's stdout
      */
     private auto readline() {
-        auto line = processPipes.stdout.readlnNoBlock();
+        string line;
+        synchronized (this) line = processPipes.stdout.readlnNoBlock();
         if (line == null) return null;
         line = line[0..$-1]; // source uses CRLF and readlnNoBlock stops at LF
 
@@ -354,11 +352,11 @@ class Server {
     }
 
     /// Watcher thread for the server process
-    private void watcher() shared {
+    private void watcher() {
         logInfo("Started watcher for '%s'", name);
-        while (sharedRunning) {
+        while (running) {
             try {
-                (cast(Server)this).watch();
+                watch();
             } catch (Throwable e) {
                 logError("'%s' Watcher: %s", name, e);
             }
@@ -369,7 +367,7 @@ class Server {
     private void watch() {
         auto line = readline();
         if (line == null) {
-            sleep(100.dur!"msecs");
+            Thread.sleep(200.dur!"msecs");
             return;
         }
 
@@ -382,11 +380,11 @@ class Server {
     }
 
     /// Poller thread for the server process
-    private void poller() shared {
+    private void poller() {
         logInfo("Started poller for %s", name);
-        while (sharedRunning) {
+        while (running) {
             try {
-                (cast(Server)this).poll();
+                poll();
             } catch (Throwable e) {
                 logError("'%s' Poller: %s", name, e);
             }
@@ -395,10 +393,20 @@ class Server {
     }
 
     private void poll() {
+        auto startTime = Clock.currTime();
+
+        while (true) {
+            if (!running) return;
+
+            auto now = Clock.currTime();
+            if (now - startTime > POLL_INTERVAL) {
+                break;
+            }
+            Thread.sleep(200.dur!"msecs");
+        }
+
         if (status.running) {
             status.sendPoll(this);
         }
-
-        sleep(POLL_INTERVAL);
     }
 }
