@@ -63,4 +63,12 @@ class ServersInterface {
 
         emptyResponse;
     }
+
+    void postTogglePolling(scope HTTPServerRequest req) {
+        requireAuthentication(req);
+        requireServer(req);
+        server.pollingEnabled = !server.pollingEnabled;
+
+        emptyResponse;
+    }
 }
