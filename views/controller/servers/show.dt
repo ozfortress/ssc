@@ -21,10 +21,14 @@ block content
             #logs
             - url = "/controller/servers/%s/command?key=%s".format(server.name, key);
             form(role="form", action=url, method="post")
-                .col-md-11
+                .col-md-10
                     input.form-control(type="text", name="command", autofocus)
                 .col-md-1
                     input.btn.btn-default(type="submit", value="Execute")
+            - url = "/controller/servers/%s/toggle_polling?key=%s".format(server.name, key);
+            form(role="form", action=url, method="post")
+                .col-md-1
+                    input.btn.btn-default(type="submit", value="Toggle Polling")
 
     .panel.panel-danger
         .panel-heading Control

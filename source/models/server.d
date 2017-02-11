@@ -97,6 +97,7 @@ class Server {
 
     bool dirty = true;
     bool willDelete = false;
+    bool pollingEnabled = true;
     DList!string logs;
     ServerStatus status;
     Booking booking = null;
@@ -405,7 +406,7 @@ class Server {
             Thread.sleep(200.dur!"msecs");
         }
 
-        if (status.running) {
+        if (status.running && pollingEnabled) {
             status.sendPoll(this);
         }
     }
