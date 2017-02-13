@@ -1,6 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
+		"base32": "0.1.0",
 		"chap": "0.4.0",
 		"diet-ng": "1.1.1",
 		"jsonizer": "0.7.3",

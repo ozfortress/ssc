@@ -1,11 +1,12 @@
 module models.booking;
 import models;
 
-import std.base64;
+import std.ascii;
 import std.datetime;
 import std.exception;
 
 import vibe.d;
+import base32;
 
 import store;
 
@@ -55,8 +56,9 @@ class Booking {
         return endsAt - startedAt;
     }
 
+    /// Returns user base32 encoded in lower-case
     @property auto userEscaped() {
-        return Base64URL.encode(cast(ubyte[])user);
+        return Base32.encode(cast(ubyte[])user).toLower;
     }
 
     private this(string client, string user, Server server, DateTime endsAt) {

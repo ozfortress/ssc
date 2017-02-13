@@ -6,6 +6,7 @@ license "MIT"
 
 dependency "vibe-d" version="~>0.7"
 dependency "jsonizer" version="~>0.7.3"
+dependency "base32" version="~>0.1.0"
 
 preBuildCommands "mkdir -p bin"
 targetName "bin/ssc"
