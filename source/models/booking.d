@@ -13,6 +13,10 @@ import store;
 class Booking {
     package static shared Store!(Booking, "id") store; // Initialized in package.d
 
+    private static idFor(string client, string user) {
+        return client ~ ":" ~ user;
+    }
+
     static @property auto all() {
         return store.all;
     }
@@ -22,10 +26,14 @@ class Booking {
     }
 
     static auto find(string client, string user) {
-        return store.get(client ~ ":" ~ user);
+        return store.get(idFor(client, user));
     }
 
     static Booking create(string client, string user, Duration duration) {
+        if (store.exists(idFor(client, user))) {
+            throw new StoreException("Booking already exists");
+        }
+
         auto servers = Server.allAvailable;
         enforce(!servers.empty, "No server available");
         auto server = servers.front;
@@ -49,7 +57,7 @@ class Booking {
     private Timer endTimer;
 
     @property auto id() const {
-        return client ~ ":" ~ user;
+        return idFor(client, user);
     }
 
     @property auto duration() {
