@@ -26,6 +26,14 @@ struct ServerPresenter {
             status.address, status.password, status.rconPassword);
     }
 
+    string path(string key) {
+        return "/controller/servers/%s?key=%s".format(server.name, key);
+    }
+
+    string path(string action, string key) {
+        return "/controller/servers/%s/%s?key=%s".format(server.name, action, key);
+    }
+
     string statusDisplay() {
         auto name = statusName;
         if (server.dirty) {
