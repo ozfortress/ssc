@@ -39,7 +39,7 @@ class ServerAPIImpl : ServerV1API {
         return result;
     }
 
-    void restart(string client) {
+    void postRestart(string client) {
         Server.restartAll;
     }
 }

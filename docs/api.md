@@ -32,6 +32,12 @@ Example:
 }
 ```
 
+### POST `/servers/restart/`
+
+Marks all servers as dirty, restarting any that are running but not booked.
+
+Returns nothing.
+
 ## Bookings
 
 ### POST `/bookings/`
