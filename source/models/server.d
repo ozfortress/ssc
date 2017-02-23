@@ -88,6 +88,7 @@ class Server {
 
         @jsonize("auto-start")            bool autoStart = true;
         @jsonize("bookable")              bool bookable = true;
+        @jsonize("restart-after-booking") bool restartAfterBooking = true;
         @jsonize("auto-password")         bool autoPassword = true;
         @jsonize("reset-command")         string resetCommand = null;
         @jsonize("booking-start-command") string bookingStartCommand = null;
@@ -140,11 +141,16 @@ class Server {
     void onBookingEnd(Booking booking) {
         this.booking = null;
 
-        reset();
-        if (bookingEndCommand !is null) {
-            auto command = bookingEndCommand.replace("{client}", booking.client)
-                                            .replace("{user}", booking.userEscaped);
-            sendCMD(command);
+        if (restartAfterBooking) {
+            restart();
+        } else {
+            reset();
+
+            if (bookingEndCommand !is null) {
+                auto command = bookingEndCommand.replace("{client}", booking.client)
+                                                .replace("{user}", booking.userEscaped);
+                sendCMD(command);
+            }
         }
     }
 
