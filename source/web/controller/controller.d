@@ -29,6 +29,18 @@ class ControllerInterface {
     void postReloadServers(scope HTTPServerRequest req) {
         requireAuthentication(req);
         Server.reload();
-        redirect("/controller/?key=%s".format(key));
+        emptyResponse;
+    }
+
+    void postRestartServers(scope HTTPServerRequest req) {
+        requireAuthentication(req);
+        Server.restartAll(false);
+        emptyResponse;
+    }
+
+    void postDirtyServers(scope HTTPServerRequest req) {
+        requireAuthentication(req);
+        Server.restartAll(true);
+        emptyResponse;
     }
 }

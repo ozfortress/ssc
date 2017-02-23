@@ -64,6 +64,14 @@ class ServersInterface {
         emptyResponse;
     }
 
+    void postDirty(scope HTTPServerRequest req) {
+        requireAuthentication(req);
+        requireServer(req);
+        server.makeDirty();
+
+        emptyResponse;
+    }
+
     void postTogglePolling(scope HTTPServerRequest req) {
         requireAuthentication(req);
         requireServer(req);

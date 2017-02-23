@@ -34,6 +34,9 @@ block content
     .panel.panel-danger
         .panel-heading Control
         .panel-body
+            form(role="form", action=p.path("dirty", key), method="post")
+                input.btn.btn-default(type="submit", value="Mark Dirty")
+
             form(role="form", action=p.path("restart", key), method="post")
                 input.btn.btn-default(type="submit", value="Restart")
 

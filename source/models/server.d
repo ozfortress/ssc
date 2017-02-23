@@ -80,6 +80,19 @@ class Server {
         }
     }
 
+    static void restartAll(bool makeDirty = true) {
+        // Restart concurrently, since it blocks
+        auto tasks = all.map!(server => runTask({
+            if (makeDirty) {
+                server.makeDirty();
+            } else {
+                server.restart();
+            }
+        })).array;
+
+        foreach (task; tasks) task.join();
+    }
+
     mixin JsonizeMe;
     @jsonize(Jsonize.opt) {
         string name;
@@ -180,6 +193,17 @@ class Server {
         } else {
             if (resetCommand !is null) sendCMD(resetCommand);
             if (autoPassword) generatePasswords();
+        }
+    }
+
+    /**
+     * Marks the server as dirty, making the server restart either immediately or when it becomes available
+     */
+    void makeDirty() {
+        if (available) {
+            restart();
+        } else {
+            dirty = true;
         }
     }
 
