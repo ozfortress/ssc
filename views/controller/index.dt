@@ -55,6 +55,14 @@ block content
     .panel.panel-danger
         .panel-heading Control
         .panel-body
+            - url = "/controller/dirty_servers?key=%s".format(key);
+            form(role="form", action=url, method="post")
+                input.btn.btn-default(type="submit", value="Mark Servers Dirty")
+
             - url = "/controller/reload_servers?key=%s".format(key);
             form(role="form", action=url, method="post")
                 input.btn.btn-default(type="submit", value="Reload Server Configuration")
+
+            - url = "/controller/restart_servers?key=%s".format(key);
+            form(role="form", action=url, method="post")
+                input.btn.btn-default(type="submit", value="Restart All Servers!")

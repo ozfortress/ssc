@@ -80,6 +80,19 @@ class Server {
         }
     }
 
+    static void restartAll(bool makeDirty = true) {
+        // Restart concurrently, since it blocks
+        auto tasks = all.map!(server => runTask({
+            if (makeDirty) {
+                server.makeDirty();
+            } else {
+                server.restart();
+            }
+        })).array;
+
+        foreach (task; tasks) task.join();
+    }
+
     mixin JsonizeMe;
     @jsonize(Jsonize.opt) {
         string name;
@@ -88,6 +101,7 @@ class Server {
 
         @jsonize("auto-start")            bool autoStart = true;
         @jsonize("bookable")              bool bookable = true;
+        @jsonize("restart-after-booking") bool restartAfterBooking = true;
         @jsonize("auto-password")         bool autoPassword = true;
         @jsonize("reset-command")         string resetCommand = null;
         @jsonize("booking-start-command") string bookingStartCommand = null;
@@ -140,11 +154,16 @@ class Server {
     void onBookingEnd(Booking booking) {
         this.booking = null;
 
-        reset();
-        if (bookingEndCommand !is null) {
-            auto command = bookingEndCommand.replace("{client}", booking.client)
-                                            .replace("{user}", booking.userEscaped);
-            sendCMD(command);
+        if (restartAfterBooking) {
+            restart();
+        } else {
+            reset();
+
+            if (bookingEndCommand !is null) {
+                auto command = bookingEndCommand.replace("{client}", booking.client)
+                                                .replace("{user}", booking.userEscaped);
+                sendCMD(command);
+            }
         }
     }
 
@@ -174,6 +193,17 @@ class Server {
         } else {
             if (resetCommand !is null) sendCMD(resetCommand);
             if (autoPassword) generatePasswords();
+        }
+    }
+
+    /**
+     * Marks the server as dirty, making the server restart either immediately or when it becomes available
+     */
+    void makeDirty() {
+        if (available) {
+            restart();
+        } else {
+            dirty = true;
         }
     }
 

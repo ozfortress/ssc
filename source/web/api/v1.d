@@ -38,6 +38,10 @@ class ServerAPIImpl : ServerV1API {
         result["servers"] = servers.map!(s => ServerPresenter(s).toJson).array;
         return result;
     }
+
+    void restart(string client) {
+        Server.restartAll;
+    }
 }
 
 class BookingAPIImpl : BookingV1API {
