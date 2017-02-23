@@ -30,6 +30,10 @@ interface ServerV1API {
     @path("/")
     @authv1
     Json get(string client);
+
+    @path("/restart")
+    @authv1
+    void restart(string client);
 }
 
 interface BookingV1API {
