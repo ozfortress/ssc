@@ -31,9 +31,9 @@ interface ServerV1API {
     @authv1
     Json get(string client);
 
-    @path("/restart")
+    @path("/restart/")
     @authv1
-    void restart(string client);
+    void postRestart(string client);
 }
 
 interface BookingV1API {
