@@ -200,7 +200,7 @@ class Server {
      * Marks the server as dirty, making the server restart either immediately or when it becomes available
      */
     void makeDirty() {
-        if (available) {
+        if (available || !status.running) {
             restart();
         } else {
             dirty = true;
