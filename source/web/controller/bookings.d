@@ -20,8 +20,8 @@ class BookingsInterface {
     }
 
     @path("")
-    void postCreate(scope HTTPServerRequest req, string user, ushort duration) {
-        requireAuthentication(req);
+    void postCreate(scope HTTPServerRequest req, scope HTTPServerResponse res, string user, ushort duration) {
+        requireAuthentication(req, res);
 
         try {
             Booking.create(client, user, duration.dur!"hours");
@@ -32,8 +32,8 @@ class BookingsInterface {
     }
 
     @path("/:server/delete")
-    void postDelete(scope HTTPServerRequest req) {
-        requireAuthentication(req);
+    void postDelete(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+        requireAuthentication(req, res);
         requireBooking(req);
 
         booking.end();

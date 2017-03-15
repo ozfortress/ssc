@@ -19,8 +19,8 @@ struct BookingPresenter {
         return ServerPresenter(booking.server);
     }
 
-    string deletePath(string key) {
-        return "/controller/bookings/%s/delete?key=%s".format(server.name, key);
+    string deletePath() {
+        return "/controller/bookings/%s/delete".format(server.name);
     }
 
     Json toJson(bool includeServer = true) {

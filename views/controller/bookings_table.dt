@@ -1,4 +1,3 @@
-- import std.string;
 - import presenters;
 
 tr
@@ -15,9 +14,9 @@ tr
         td= booking.client
         td= booking.user
         td
-            a(href=p.server.path(key))= booking.server.name
+            a(href=p.server.path)= booking.server.name
         td= booking.startedAt.toSimpleString()
         td= booking.endsAt.toSimpleString()
         td
-            form(role="form", action=p.deletePath(key), method="post")
+            form(role="form", action=p.deletePath(), method="post")
                 input.btn.btn-default(type="submit", value="End")
