@@ -10,11 +10,13 @@ mixin template WebInterface() {
     string key;
     string client;
 
-    private void requireAuthentication(scope HTTPServerRequest req) {
-        enforceHTTP("key" in req.query, HTTPStatus.forbidden, "Invalid key");
-        key = req.query["key"];
-        client = config.keys.authenticate(key);
-        enforceHTTP(client !is null, HTTPStatus.forbidden, "Invalid key");
+    private void requireAuthentication(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+        performBasicAuth(req, res, "all", (string username, string password) {
+            if (username != "") return false;
+            key = password;
+            client = config.keys.authenticate(key);
+            return client !is null;
+        });
     }
 
     private void emptyResponse() {

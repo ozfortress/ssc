@@ -26,12 +26,12 @@ struct ServerPresenter {
             status.address, status.password, status.rconPassword);
     }
 
-    string path(string key) {
-        return "/controller/servers/%s?key=%s".format(server.name, key);
+    string path() {
+        return "/controller/servers/%s".format(server.name);
     }
 
-    string path(string action, string key) {
-        return "/controller/servers/%s/%s?key=%s".format(server.name, action, key);
+    string path(string action) {
+        return "/controller/servers/%s/%s".format(server.name, action);
     }
 
     string statusDisplay() {

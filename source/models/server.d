@@ -200,7 +200,7 @@ class Server {
      * Marks the server as dirty, making the server restart either immediately or when it becomes available
      */
     void makeDirty() {
-        if (available) {
+        if (available || !status.running) {
             restart();
         } else {
             dirty = true;
@@ -323,10 +323,9 @@ class Server {
      */
     private void reload(Server config) {
         synchronized (this) {
+            // Make dirty if server options change
             if (executable != config.executable || options != config.options) {
-                // Reset if we wouldn't disturb anyone
-                if (available) reset();
-                else dirty = true;
+                makeDirty();
             }
 
             executable = config.executable;

@@ -6,7 +6,7 @@ block head
 block content
     script.
         function updateServers() {
-            get('/controller/servers_table?key=#{key}', function(response) {
+            get('/controller/servers_table', function(response) {
                 var container = document.getElementById('servers');
                 container.innerHTML = response;
             });
@@ -16,7 +16,7 @@ block content
         setInterval(updateServers, 2000);
 
         function updateBookings() {
-            get('/controller/bookings_table?key=#{key}', function(response) {
+            get('/controller/bookings_table', function(response) {
                 var container = document.getElementById('bookings');
                 container.innerHTML = response;
             });
@@ -24,9 +24,6 @@ block content
 
         updateBookings();
         setInterval(updateBookings, 2000);
-
-    - import std.string;
-    - string url;
 
     h1 Source Server Controller
 
@@ -42,8 +39,7 @@ block content
 
         .panel-body
             h3 Create Booking
-            - url = "/controller/bookings?key=%s".format(key);
-            form(role="form", action=url, method="post")
+            form(role="form", action="/controller/bookings", method="post")
                 .row
                     .col-md-6
                         input.form-control(type="text", name="user", placeholder="user")
@@ -55,14 +51,11 @@ block content
     .panel.panel-danger
         .panel-heading Control
         .panel-body
-            - url = "/controller/dirty_servers?key=%s".format(key);
-            form(role="form", action=url, method="post")
+            form(role="form", action="/controller/dirty_servers", method="post")
                 input.btn.btn-default(type="submit", value="Mark Servers Dirty")
 
-            - url = "/controller/reload_servers?key=%s".format(key);
-            form(role="form", action=url, method="post")
+            form(role="form", action="/controller/reload_servers", method="post")
                 input.btn.btn-default(type="submit", value="Reload Server Configuration")
 
-            - url = "/controller/restart_servers?key=%s".format(key);
-            form(role="form", action=url, method="post")
+            form(role="form", action="/controller/restart_servers", method="post")
                 input.btn.btn-default(type="submit", value="Restart All Servers!")

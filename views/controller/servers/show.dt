@@ -4,14 +4,13 @@ block head
     title= server.name
 
 block content
-    - import std.format;
     - import presenters;
 
     - string url;
     - auto p = ServerPresenter(server);
 
     h1
-        a(href="/controller?key=#{key}") servers
+        a(href="/controller") servers
         | /#{server.name}
 
     .panel.panel-info
@@ -22,30 +21,30 @@ block content
         .panel-heading Console
         .panel-body
             #logs
-            form(role="form", action=p.path("command", key), method="post")
+            form(role="form", action=p.path("command"), method="post")
                 .col-md-10
                     input.form-control(type="text", name="command", autofocus)
                 .col-md-1
                     input.btn.btn-default(type="submit", value="Execute")
-            form(role="form", action=p.path("toggle_polling", key), method="post")
+            form(role="form", action=p.path("toggle_polling"), method="post")
                 .col-md-1
                     input.btn.btn-default(type="submit", value="Toggle Polling")
 
     .panel.panel-danger
         .panel-heading Control
         .panel-body
-            form(role="form", action=p.path("dirty", key), method="post")
+            form(role="form", action=p.path("dirty"), method="post")
                 input.btn.btn-default(type="submit", value="Mark Dirty")
 
-            form(role="form", action=p.path("restart", key), method="post")
+            form(role="form", action=p.path("restart"), method="post")
                 input.btn.btn-default(type="submit", value="Restart")
 
-            form(role="form", action=p.path("stop", key), method="post")
+            form(role="form", action=p.path("stop"), method="post")
                 input.btn.btn-default(type="submit", value="Stop")
 
     script.
         function updateStatus() {
-            get('#{p.path("status", key)}', function(response) {
+            get('#{p.path("status")}', function(response) {
                 var container = document.getElementById('status');
                 container.innerHTML = response;
             });
@@ -55,7 +54,7 @@ block content
         setInterval(updateStatus, 3000);
 
         function updateLogs() {
-            get('#{p.path("logs", key)}', function(response) {
+            get('#{p.path("logs")}', function(response) {
                 var container = document.getElementById('logs');
                 container.innerHTML = response;
             });
