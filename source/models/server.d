@@ -56,6 +56,9 @@ class Server {
     static void reload() {
         auto serverList = readServerConfig();
 
+        // Perform all actions asynchronously
+        Task[] tasks;
+
         // Get a map from the list of servers
         Server[string] servers;
         foreach (server; serverList) {
@@ -64,9 +67,9 @@ class Server {
             // Don't override existing servers, reload them with new settings instead
             auto old = store.get(server.name);
             if (old is null) {
-                server.create();
+                tasks ~= runTask((Server server) => server.create(), server);
             } else {
-                old.reload(server);
+                tasks ~= runTask((Server old, Server server) => old.reload(server), old, server);
             }
         }
 
@@ -74,12 +77,14 @@ class Server {
         foreach (server; store.all) {
             if (server.name !in servers) {
                 if (!server.running || (server.bookable && server.booking is null)) {
-                    server.remove();
+                    tasks ~= runTask((Server server) => server.remove(), server);
                 } else {
                     server.willDelete = true;
                 }
             }
         }
+
+        foreach (task; tasks) task.join();
     }
 
     static void restartAll(bool makeDirty = true) {
