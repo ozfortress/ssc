@@ -359,11 +359,17 @@ class Server {
 
         synchronized (this) {
             executable = config.executable;
-            options = config.options;
-            autoStart = config.autoStart;
-            bookable = config.bookable;
-            resetCommand = config.resetCommand;
-            logPath = config.logPath;
+            options    = config.options;
+
+            autoStart           = config.autoStart;
+            bookable            = config.bookable;
+            restartAfterBooking = config.restartAfterBooking;
+            autoPassword        = config.autoPassword;
+            idleBookingTimeout  = config.idleBookingTimeout;
+            resetCommand        = config.resetCommand;
+            bookingStartCommand = config.bookingStartCommand;
+            bookingEndCommand   = config.bookingEndCommand;
+            logPath             = config.logPath;
         }
     }
 
