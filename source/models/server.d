@@ -165,15 +165,15 @@ class Server {
      */
     void onBookingEnd(Booking booking) {
         if (restartAfterBooking) {
-            restart();
-        } else {
-            reset();
+            dirty = true;
+        }
 
-            if (bookingEndCommand !is null) {
-                auto command = bookingEndCommand.replace("{client}", booking.client)
-                                                .replace("{user}", booking.userEscaped);
-                sendCMD(command);
-            }
+        reset();
+
+        if (bookingEndCommand !is null) {
+            auto command = bookingEndCommand.replace("{client}", booking.client)
+                                            .replace("{user}", booking.userEscaped);
+            sendCMD(command);
         }
 
         this.booking = null;
@@ -200,10 +200,12 @@ class Server {
         enforce(running);
         sendCMD("kickall", reason);
 
-        // Give the server time to kick everyone
-        sleep(SERVER_KICK_DELAY);
-
         if (dirty) {
+            // Give the server time to kick everyone before restarting
+            logInfo("Kicking Everyone");
+            sleep(SERVER_KICK_DELAY);
+            logInfo("Kicked Everyone");
+
             restart();
         } else {
             if (resetCommand !is null) sendCMD(resetCommand);
