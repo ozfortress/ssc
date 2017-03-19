@@ -24,7 +24,7 @@ set :format_options, log_file: "logs/capistrano.log"
 # set :pty, true
 
 # Default value for :linked_files is []
-append :linked_files, 'config/secrets.json', 'config/keys.json', 'config/servers.json'
+append :linked_files, 'config/keys.json', 'config/servers.json'
 
 # Default value for linked_dirs is []
 append :linked_dirs, 'logs'
