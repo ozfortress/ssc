@@ -159,8 +159,6 @@ class Server {
      * Hook for when a booking ends
      */
     void onBookingEnd(Booking booking) {
-        this.booking = null;
-
         if (restartAfterBooking) {
             restart();
         } else {
@@ -172,6 +170,8 @@ class Server {
                 sendCMD(command);
             }
         }
+
+        this.booking = null;
     }
 
     /**
