@@ -56,6 +56,9 @@ class Server {
     static void reload() {
         auto serverList = readServerConfig();
 
+        // Perform all actions asynchronously
+        Task[] tasks;
+
         // Get a map from the list of servers
         Server[string] servers;
         foreach (server; serverList) {
@@ -64,9 +67,9 @@ class Server {
             // Don't override existing servers, reload them with new settings instead
             auto old = store.get(server.name);
             if (old is null) {
-                server.create();
+                tasks ~= runTask((Server server) => server.create(), server);
             } else {
-                old.reload(server);
+                tasks ~= runTask((Server old, Server server) => old.reload(server), old, server);
             }
         }
 
@@ -74,12 +77,14 @@ class Server {
         foreach (server; store.all) {
             if (server.name !in servers) {
                 if (!server.running || (server.bookable && server.booking is null)) {
-                    server.remove();
+                    tasks ~= runTask((Server server) => server.remove(), server);
                 } else {
                     server.willDelete = true;
                 }
             }
         }
+
+        foreach (task; tasks) task.join();
     }
 
     static void restartAll(bool makeDirty = true) {
@@ -160,15 +165,15 @@ class Server {
      */
     void onBookingEnd(Booking booking) {
         if (restartAfterBooking) {
-            restart();
-        } else {
-            reset();
+            dirty = true;
+        }
 
-            if (bookingEndCommand !is null) {
-                auto command = bookingEndCommand.replace("{client}", booking.client)
-                                                .replace("{user}", booking.userEscaped);
-                sendCMD(command);
-            }
+        reset();
+
+        if (bookingEndCommand !is null) {
+            auto command = bookingEndCommand.replace("{client}", booking.client)
+                                            .replace("{user}", booking.userEscaped);
+            sendCMD(command);
         }
 
         this.booking = null;
@@ -195,10 +200,12 @@ class Server {
         enforce(running);
         sendCMD("kickall", reason);
 
-        // Give the server time to kick everyone
-        sleep(SERVER_KICK_DELAY);
-
         if (dirty) {
+            // Give the server time to kick everyone before restarting
+            logInfo("Kicking Everyone");
+            sleep(SERVER_KICK_DELAY);
+            logInfo("Kicked Everyone");
+
             restart();
         } else {
             if (resetCommand !is null) sendCMD(resetCommand);
@@ -320,12 +327,10 @@ class Server {
      * Remove the server, killing if necessary
      */
     private void remove() {
-        synchronized (this) {
-            if (running) kill();
+        if (running) kill();
 
-            store.remove(this);
-        }
-    }
+        store.remove(this);
+}
 
     /**
      * Resets the timer for ending a booking when plays are idle on the server.
