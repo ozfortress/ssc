@@ -25,6 +25,7 @@ class Server {
     static const POLL_INTERVAL = 15.dur!("seconds");
     static const LOG_LENGTH = 30;
     static const MIN_IDLE_PLAYERS = 2;
+    static const SERVER_KICK_DELAY = 5.dur!("seconds");
 
     package static shared Store!(Server, "name") store; // Initialized in package.d
 
@@ -158,8 +159,6 @@ class Server {
      * Hook for when a booking ends
      */
     void onBookingEnd(Booking booking) {
-        this.booking = null;
-
         if (restartAfterBooking) {
             restart();
         } else {
@@ -171,6 +170,8 @@ class Server {
                 sendCMD(command);
             }
         }
+
+        this.booking = null;
     }
 
     /**
@@ -195,7 +196,7 @@ class Server {
         sendCMD("kickall", reason);
 
         // Give the server time to kick everyone
-        sleep(500.dur!"msecs");
+        sleep(SERVER_KICK_DELAY);
 
         if (dirty) {
             restart();
