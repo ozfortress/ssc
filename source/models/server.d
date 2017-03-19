@@ -226,19 +226,19 @@ class Server {
         synchronized (this) {
             enforce(!running);
 
-            auto options = this.options.byKeyValue.map!((o) => "%s %s".format(o.key, o.value)).array;
+            auto options = this.options.byKeyValue.map!(o => [o.key, o.value]).reduce!"a ~ b".array;
             // Always enable the console
             options ~= "-console";
 
-            auto serverCommand = "%s %s".format(executable, options.join(" "));
+            auto serverCommands = [executable] ~ options;
             // script captures /dev/tty in stdout
-            auto command = "unbuffer -p %s".format(serverCommand);
+            auto commands = ["unbuffer", "-p"] ~ serverCommands;
 
-            log("Started with: %s".format(command));
-            logInfo("Spawning %s with: %s", name, command);
+            log("Started with: %s".format(commands));
+            logInfo("Spawning %s with: %s", name, commands);
 
             auto redirects = Redirect.stdin | Redirect.stdout | Redirect.stderrToStdout;
-            processPipes = pipeShell(command, redirects);
+            processPipes = pipeProcess(commands, redirects);
 
             // Set the process's stdout as non-blocking
             processPipes.stdout.markNonBlocking();
