@@ -194,6 +194,9 @@ class Server {
         enforce(running);
         sendCMD("kickall", reason);
 
+        // Give the server time to kick everyone
+        sleep(500.dur!"msecs");
+
         if (dirty) {
             restart();
         } else {
