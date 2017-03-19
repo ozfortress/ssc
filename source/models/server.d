@@ -103,6 +103,7 @@ class Server {
         @jsonize("bookable")              bool bookable = true;
         @jsonize("restart-after-booking") bool restartAfterBooking = true;
         @jsonize("auto-password")         bool autoPassword = true;
+        @jsonize("idle-booking-timeout")  size_t idleBookingTimeout = 15;
         @jsonize("reset-command")         string resetCommand = null;
         @jsonize("booking-start-command") string bookingStartCommand = null;
         @jsonize("booking-end-command")   string bookingEndCommand = null;
@@ -121,6 +122,8 @@ class Server {
         Thread processWatcher;
         Thread processPoller;
         bool statusSent = false;
+
+        Timer idleTimer;
     }
 
     @property auto available() {
@@ -145,6 +148,12 @@ class Server {
             auto command = bookingStartCommand.replace("{client}", booking.client)
                                               .replace("{user}", booking.userEscaped);
             sendCMD(command);
+        }
+
+        if (idleBookingTimeout > 0) {
+            idleTimer = setTimer(idleBookingTimeout.dur!"minutes", () {
+                booking.end();
+            });
         }
     }
 
@@ -405,6 +414,12 @@ class Server {
         if (status.parse(range)) {
             if (!status.running) {
                 status.sendPoll(this);
+            }
+
+            if (booking !is null && idleBookingTimeout > 0) {
+                if (status.humanPlayers > 2) {
+                    idleTimer.rearm(idleBookingTimeout.dur!"minutes");
+                }
             }
         }
     }

@@ -14,6 +14,7 @@
             "bookable": true, // Allows booking of the server, true by default
             "restart-after-booking": true, // Automatically restarts the server when a booking ends. Doesn't send any other commands
             "auto-password": true, // Automatically sets secure passwords on reset (both sv_password and rcon_password) (done after reset-command is run), true by default
+            "idle-booking-timeout": 15, // Amount of time to wait after there are less than 2 players in the server to reset the booking. 0 for no idle timeout
             "reset-command": "exec reset.cfg", // Run when a server starts, is booked or is unbooked
             // The following 2 commands allow arguments for when a booking starts, ends.
             // Arguments are string replaced eg: {argument}
