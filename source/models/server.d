@@ -325,12 +325,10 @@ class Server {
      * Remove the server, killing if necessary
      */
     private void remove() {
-        synchronized (this) {
-            if (running) kill();
+        if (running) kill();
 
-            store.remove(this);
-        }
-    }
+        store.remove(this);
+}
 
     /**
      * Resets the timer for ending a booking when plays are idle on the server.
