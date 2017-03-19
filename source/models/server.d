@@ -103,6 +103,7 @@ class Server {
         @jsonize("bookable")              bool bookable = true;
         @jsonize("restart-after-booking") bool restartAfterBooking = true;
         @jsonize("auto-password")         bool autoPassword = true;
+        @jsonize("idle-booking-timeout")  size_t idleBookingTimeout = 15;
         @jsonize("reset-command")         string resetCommand = null;
         @jsonize("booking-start-command") string bookingStartCommand = null;
         @jsonize("booking-end-command")   string bookingEndCommand = null;
@@ -121,6 +122,8 @@ class Server {
         Thread processWatcher;
         Thread processPoller;
         bool statusSent = false;
+
+        Timer idleTimer;
     }
 
     @property auto available() {
@@ -146,6 +149,12 @@ class Server {
                                               .replace("{user}", booking.userEscaped);
             sendCMD(command);
         }
+
+        if (idleBookingTimeout > 0) {
+            idleTimer = setTimer(idleBookingTimeout.dur!"minutes", () {
+                booking.end();
+            });
+        }
     }
 
     /**
@@ -153,6 +162,10 @@ class Server {
      */
     void onBookingEnd(Booking booking) {
         this.booking = null;
+
+        if (idleTimer.pending) {
+            idleTimer.stop();
+        }
 
         if (restartAfterBooking) {
             restart();
@@ -226,19 +239,19 @@ class Server {
         synchronized (this) {
             enforce(!running);
 
-            auto options = this.options.byKeyValue.map!((o) => "%s %s".format(o.key, o.value)).array;
+            auto options = this.options.byKeyValue.map!(o => [o.key, o.value]).reduce!"a ~ b".array;
             // Always enable the console
             options ~= "-console";
 
-            auto serverCommand = "%s %s".format(executable, options.join(" "));
+            auto serverCommands = [executable] ~ options;
             // script captures /dev/tty in stdout
-            auto command = "unbuffer -p %s".format(serverCommand);
+            auto commands = ["unbuffer", "-p"] ~ serverCommands;
 
-            log("Started with: %s".format(command));
-            logInfo("Spawning %s with: %s", name, command);
+            log("Started with: %s".format(commands));
+            logInfo("Spawning %s with: %s", name, commands);
 
             auto redirects = Redirect.stdin | Redirect.stdout | Redirect.stderrToStdout;
-            processPipes = pipeShell(command, redirects);
+            processPipes = pipeProcess(commands, redirects);
 
             // Set the process's stdout as non-blocking
             processPipes.stdout.markNonBlocking();
@@ -405,6 +418,12 @@ class Server {
         if (status.parse(range)) {
             if (!status.running) {
                 status.sendPoll(this);
+            }
+
+            if (booking !is null && idleBookingTimeout > 0) {
+                if (status.humanPlayers > 2) {
+                    idleTimer.rearm(idleBookingTimeout.dur!"minutes");
+                }
             }
         }
     }
