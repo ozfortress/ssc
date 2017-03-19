@@ -118,9 +118,13 @@ struct ServerStatus {
     }
 
     private string parseUDPIP(const string line) {
-        auto udp = line.matchFirst(`[0-9\.]+:[0-9]+`).front;
-        auto port = udp.split(":")[1];
-        auto ip = line.matchFirst(`public ip: [0-9\.]+`).front.split(":")[1].strip();
+        auto udp = line.matchFirst(`[0-9\.]+:[0-9]+`);
+        if (udp.empty) return "";
+        auto port = udp.front.split(":")[1];
+
+        auto ipLine = line.matchFirst(`public ip: [0-9\.]+`);
+        if (ipLine.empty) return "";
+        auto ip = ipLine.front.split(":")[1].strip();
         return "%s:%s".format(ip, port);
     }
 
