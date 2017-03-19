@@ -24,6 +24,7 @@ import config.application;
 class Server {
     static const POLL_INTERVAL = 15.dur!("seconds");
     static const LOG_LENGTH = 30;
+    static const MIN_IDLE_PLAYERS = 2;
 
     package static shared Store!(Server, "name") store; // Initialized in package.d
 
@@ -123,7 +124,7 @@ class Server {
         Thread processPoller;
         bool statusSent = false;
 
-        Timer idleTimer;
+        DateTime lastActive;
     }
 
     @property auto available() {
@@ -141,19 +142,15 @@ class Server {
      * Hook for when a booking starts
      */
     void onBookingStart(Booking booking) {
+        resetIdleTimer();
         this.booking = booking;
 
         reset();
+
         if (bookingStartCommand !is null) {
             auto command = bookingStartCommand.replace("{client}", booking.client)
                                               .replace("{user}", booking.userEscaped);
             sendCMD(command);
-        }
-
-        if (idleBookingTimeout > 0) {
-            idleTimer = setTimer(idleBookingTimeout.dur!"minutes", () {
-                booking.end();
-            });
         }
     }
 
@@ -162,10 +159,6 @@ class Server {
      */
     void onBookingEnd(Booking booking) {
         this.booking = null;
-
-        if (idleTimer.pending) {
-            idleTimer.stop();
-        }
 
         if (restartAfterBooking) {
             restart();
@@ -331,6 +324,21 @@ class Server {
     }
 
     /**
+     * Resets the timer for ending a booking when plays are idle on the server.
+     */
+    private void resetIdleTimer() {
+        this.lastActive = cast(DateTime)Clock.currTime();
+    }
+
+    /**
+     * Checks whether the idle timer has timed out.
+     */
+    private @property bool idleTimedOut() {
+        auto now = cast(DateTime)Clock.currTime();
+        return this.lastActive + idleBookingTimeout.dur!"minutes" < now;
+    }
+
+    /**
      * Reload the server configuration (using another server instance)
      * Use to update settings on a running server by setting the dirty flag and waiting for a time to restart
      */
@@ -376,7 +384,6 @@ class Server {
         line = line[0..$-1]; // source uses CRLF and readlnNoBlock stops at LF
 
         log(line, true);
-        //logInfo("Server '%s': %s", name, line);
         return line;
     }
 
@@ -420,9 +427,12 @@ class Server {
                 status.sendPoll(this);
             }
 
+            // Check for idle timeouts
             if (booking !is null && idleBookingTimeout > 0) {
-                if (status.humanPlayers > 2) {
-                    idleTimer.rearm(idleBookingTimeout.dur!"minutes");
+                if (status.humanPlayers >= MIN_IDLE_PLAYERS) {
+                    resetIdleTimer();
+                } else if (idleTimedOut()) {
+                    runWorkerTask!(Booking.sharedEnd)(cast(shared)booking);
                 }
             }
         }

@@ -53,6 +53,7 @@ class Booking {
     Server server;
     DateTime startedAt;
     DateTime endsAt;
+    bool ended;
 
     private Timer endTimer;
 
@@ -75,6 +76,7 @@ class Booking {
         this.server = server;
         this.endsAt = endsAt;
         this.startedAt = cast(DateTime)Clock.currTime();
+        this.ended = false;
     }
 
     void start() {
@@ -87,9 +89,19 @@ class Booking {
     }
 
     void end() {
+        synchronized(this) {
+            if (ended) return;
+            ended = true;
+        }
         logInfo("Ending booking for %s", id);
+
         server.onBookingEnd(this);
 
         Booking.store.remove(this);
+    }
+
+    /// Shared version of end
+    void sharedEnd() shared {
+        (cast(Booking)this).end();
     }
 }
