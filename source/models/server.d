@@ -163,6 +163,10 @@ class Server {
     void onBookingEnd(Booking booking) {
         this.booking = null;
 
+        if (idleTimer.pending) {
+            idleTimer.stop();
+        }
+
         if (restartAfterBooking) {
             restart();
         } else {
