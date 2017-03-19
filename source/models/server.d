@@ -346,12 +346,12 @@ class Server {
      * Use to update settings on a running server by setting the dirty flag and waiting for a time to restart
      */
     private void reload(Server config) {
-        synchronized (this) {
-            // Make dirty if server options change
-            if (executable != config.executable || options != config.options) {
-                makeDirty();
-            }
+        // Make dirty if server options change
+        if (executable != config.executable || options != config.options) {
+            makeDirty();
+        }
 
+        synchronized (this) {
             executable = config.executable;
             options = config.options;
             autoStart = config.autoStart;
