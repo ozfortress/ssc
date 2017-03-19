@@ -66,6 +66,10 @@ auto buildLogPath(string[] args...) {
     return buildPath(logsPath(), envName ~ ".log");
 }
 
+@property auto accessLogFile() {
+    return buildPath(logsPath(), envName ~ "-access.log");
+}
+
 @property auto logLevel() {
     return _settings.logLevel;
 }

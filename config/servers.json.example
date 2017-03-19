@@ -1,15 +1,20 @@
 {
-    // Gets added to the options of any server
-    "default-options": {
-        "+ip": "0.0.0.0",
-        "-game": "tf",
-        "+map": "cp_badlands"
+    // Gets added to the settings of any server
+    // Individual servers can override these
+    // Any option described here can be used in individual configs and vice-versa
+    "default": {
+        "executable": "/home/steam/.steam/tf2/srcds_run", // The executable used to run the server
+
+        "options": {
+            "+ip": "0.0.0.0",
+            "-game": "tf",
+            "+map": "cp_badlands"
+        }
     },
 
     "servers": [
         {
             "name": "server-name", // The name of the server
-            "executable": "/home/steam/.steam/tf2/srcds_run", // The executable used to run the server
             "auto-start": true, // Starts the server when ssc starts, true by default
             "bookable": true, // Allows booking of the server, true by default
             "restart-after-booking": true, // Automatically restarts the server when a booking ends. Doesn't send any other commands

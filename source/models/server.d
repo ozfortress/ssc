@@ -24,6 +24,7 @@ import config.application;
 class Server {
     static const POLL_INTERVAL = 15.dur!("seconds");
     static const LOG_LENGTH = 30;
+    static const MIN_IDLE_PLAYERS = 2;
 
     package static shared Store!(Server, "name") store; // Initialized in package.d
 
@@ -43,9 +44,9 @@ class Server {
         auto json = readJSON(buildConfigPath("servers.json"));
 
         // Merge in default options
-        auto defaultOptions = json["default-options"];
+        auto defaultSettings = json["default"];
         foreach (server; json["servers"].array) {
-            util.json.merge(server["options"], defaultOptions);
+            util.json.merge(server, defaultSettings);
         }
 
         return json["servers"].fromJSON!(Server[]);
@@ -123,7 +124,7 @@ class Server {
         Thread processPoller;
         bool statusSent = false;
 
-        Timer idleTimer;
+        DateTime lastActive;
     }
 
     @property auto available() {
@@ -141,19 +142,15 @@ class Server {
      * Hook for when a booking starts
      */
     void onBookingStart(Booking booking) {
+        resetIdleTimer();
         this.booking = booking;
 
         reset();
+
         if (bookingStartCommand !is null) {
             auto command = bookingStartCommand.replace("{client}", booking.client)
                                               .replace("{user}", booking.userEscaped);
             sendCMD(command);
-        }
-
-        if (idleBookingTimeout > 0) {
-            idleTimer = setTimer(idleBookingTimeout.dur!"minutes", () {
-                booking.end();
-            });
         }
     }
 
@@ -162,10 +159,6 @@ class Server {
      */
     void onBookingEnd(Booking booking) {
         this.booking = null;
-
-        if (idleTimer.pending) {
-            idleTimer.stop();
-        }
 
         if (restartAfterBooking) {
             restart();
@@ -201,6 +194,9 @@ class Server {
         enforce(running);
         sendCMD("kickall", reason);
 
+        // Give the server time to kick everyone
+        sleep(500.dur!"msecs");
+
         if (dirty) {
             restart();
         } else {
@@ -213,7 +209,7 @@ class Server {
      * Marks the server as dirty, making the server restart either immediately or when it becomes available
      */
     void makeDirty() {
-        if (available || !status.running) {
+        if (available || (!status.running && autoStart)) {
             restart();
         } else {
             dirty = true;
@@ -331,16 +327,31 @@ class Server {
     }
 
     /**
+     * Resets the timer for ending a booking when plays are idle on the server.
+     */
+    private void resetIdleTimer() {
+        this.lastActive = cast(DateTime)Clock.currTime();
+    }
+
+    /**
+     * Checks whether the idle timer has timed out.
+     */
+    private @property bool idleTimedOut() {
+        auto now = cast(DateTime)Clock.currTime();
+        return this.lastActive + idleBookingTimeout.dur!"minutes" < now;
+    }
+
+    /**
      * Reload the server configuration (using another server instance)
      * Use to update settings on a running server by setting the dirty flag and waiting for a time to restart
      */
     private void reload(Server config) {
-        synchronized (this) {
-            // Make dirty if server options change
-            if (executable != config.executable || options != config.options) {
-                makeDirty();
-            }
+        // Make dirty if server options change
+        if (executable != config.executable || options != config.options) {
+            makeDirty();
+        }
 
+        synchronized (this) {
             executable = config.executable;
             options = config.options;
             autoStart = config.autoStart;
@@ -376,7 +387,6 @@ class Server {
         line = line[0..$-1]; // source uses CRLF and readlnNoBlock stops at LF
 
         log(line, true);
-        //logInfo("Server '%s': %s", name, line);
         return line;
     }
 
@@ -420,9 +430,12 @@ class Server {
                 status.sendPoll(this);
             }
 
+            // Check for idle timeouts
             if (booking !is null && idleBookingTimeout > 0) {
-                if (status.humanPlayers > 2) {
-                    idleTimer.rearm(idleBookingTimeout.dur!"minutes");
+                if (status.humanPlayers >= MIN_IDLE_PLAYERS) {
+                    resetIdleTimer();
+                } else if (idleTimedOut()) {
+                    runWorkerTask!(Booking.sharedEnd)(cast(shared)booking);
                 }
             }
         }

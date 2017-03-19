@@ -10,7 +10,7 @@ shared static this() {
 
     // Log access to the log file
     //settings.accessLogToConsole = true;
-    settings.accessLogFile = config.application.logFile;
+    settings.accessLogFile = config.application.accessLogFile;
 
     // Log to the proper log file
     auto fileLogger = cast(shared)new FileLogger(config.application.logFile);
