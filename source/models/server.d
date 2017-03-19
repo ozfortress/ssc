@@ -44,9 +44,9 @@ class Server {
         auto json = readJSON(buildConfigPath("servers.json"));
 
         // Merge in default options
-        auto defaultOptions = json["default-options"];
+        auto defaultSettings = json["default"];
         foreach (server; json["servers"].array) {
-            util.json.merge(server["options"], defaultOptions);
+            util.json.merge(server, defaultSettings);
         }
 
         return json["servers"].fromJSON!(Server[]);
