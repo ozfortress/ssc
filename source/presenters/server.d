@@ -27,11 +27,11 @@ struct ServerPresenter {
     }
 
     string path() {
-        return "/controller/servers/%s".format(server.name);
+        return "/servers/%s".format(server.name);
     }
 
     string path(string action) {
-        return "/controller/servers/%s/%s".format(server.name, action);
+        return "/servers/%s/%s".format(server.name, action);
     }
 
     string statusDisplay() {

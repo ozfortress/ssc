@@ -20,7 +20,7 @@ struct BookingPresenter {
     }
 
     string deletePath() {
-        return "/controller/bookings/%s/delete".format(server.name);
+        return "/bookings/%s/delete".format(server.name);
     }
 
     Json toJson(bool includeServer = true) {

@@ -3,7 +3,7 @@ import web.controller;
 
 import models;
 
-@path("/controller/servers/:server")
+@path("/servers/:server")
 class ServersInterface {
     mixin WebInterface;
 
