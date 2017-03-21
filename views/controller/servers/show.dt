@@ -10,7 +10,7 @@ block content
     - auto p = ServerPresenter(server);
 
     h1
-        a(href="/controller") servers
+        a(href="/") servers
         | /#{server.name}
 
     .panel.panel-info

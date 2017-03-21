@@ -7,7 +7,7 @@ import std.datetime;
 import store;
 import models;
 
-@path("/controller/bookings")
+@path("/bookings")
 class BookingsInterface {
     mixin WebInterface;
 

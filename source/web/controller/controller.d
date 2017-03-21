@@ -4,7 +4,7 @@ import web.controller;
 import models;
 static import store;
 
-@path("/controller")
+@path("/")
 class ControllerInterface {
     mixin WebInterface;
 

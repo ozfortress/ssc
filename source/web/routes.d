@@ -11,7 +11,7 @@ static auto router() {
     router.get("/status", &status);
 
     router.any("/api/*", web.api.routes.router);
-    router.any("/controller*", web.controller.routes.router);
+    router.any("/*", web.controller.routes.router);
 
     // Serve static files
     auto fsettings = new HTTPFileServerSettings;

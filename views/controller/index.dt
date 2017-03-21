@@ -6,7 +6,7 @@ block head
 block content
     script.
         function updateServers() {
-            get('/controller/servers_table', function(response) {
+            get('/servers_table', function(response) {
                 var container = document.getElementById('servers');
                 container.innerHTML = response;
             });
@@ -16,7 +16,7 @@ block content
         setInterval(updateServers, 2000);
 
         function updateBookings() {
-            get('/controller/bookings_table', function(response) {
+            get('/bookings_table', function(response) {
                 var container = document.getElementById('bookings');
                 container.innerHTML = response;
             });
@@ -39,7 +39,7 @@ block content
 
         .panel-body
             h3 Create Booking
-            form(role="form", action="/controller/bookings", method="post")
+            form(role="form", action="/bookings", method="post")
                 .row
                     .col-md-6
                         input.form-control(type="text", name="user", placeholder="user")
@@ -51,11 +51,11 @@ block content
     .panel.panel-danger
         .panel-heading Control
         .panel-body
-            form(role="form", action="/controller/dirty_servers", method="post")
+            form(role="form", action="/dirty_servers", method="post")
                 input.btn.btn-default(type="submit", value="Mark Servers Dirty")
 
-            form(role="form", action="/controller/reload_servers", method="post")
+            form(role="form", action="/reload_servers", method="post")
                 input.btn.btn-default(type="submit", value="Reload Server Configuration")
 
-            form(role="form", action="/controller/restart_servers", method="post")
+            form(role="form", action="/restart_servers", method="post")
                 input.btn.btn-default(type="submit", value="Restart All Servers!")
