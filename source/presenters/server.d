@@ -73,7 +73,7 @@ struct ServerPresenter {
             if (server.booking is null) {
                 return "Available";
             }
-            return "Booked";
+            return "Booked (%s)".format(server.booking.user);
         }
         return "Not Bookable";
     }
