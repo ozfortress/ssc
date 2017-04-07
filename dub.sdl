@@ -21,7 +21,7 @@ configuration "application" {
 configuration "production" {
     targetType "executable"
     versions "VibeDefaultMain" "production"
-    releaseMode
+    #releaseMode
 }
 
 # Test Environment
