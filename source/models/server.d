@@ -23,6 +23,7 @@ import config.application;
 
 class Server {
     static const POLL_INTERVAL = 15.dur!("seconds");
+    static const POLL_TIMEOUT = 2.dur!("minutes");
     static const LOG_LENGTH = 30;
     static const MIN_IDLE_PLAYERS = 2;
     static const SERVER_KICK_DELAY = 5.dur!("seconds");
@@ -479,7 +480,12 @@ class Server {
             Thread.sleep(200.dur!"msecs");
         }
 
-        if (status.running && pollingEnabled) {
+        // If we didn't get first poll within the timeout time, send again.
+        // Sometimes srcds likes to ignore the first 'status'
+        auto now = Clock.currTime();
+        auto pollingTimeout = now - startTime > POLL_TIMEOUT;
+
+        if (pollingEnabled && (status.running || pollingTimeout)) {
             status.sendPoll(this);
         }
     }
