@@ -92,10 +92,17 @@ struct ServerPresenter {
     }
 
     string lastUpdate() {
+        auto result = "";
         if (server.status.lastUpdate == DateTime.init) {
-            return "never";
+            result ~= "never";
+        } else {
+            result ~= lastUpdateDuration.toString() ~ " ago";
         }
-        return lastUpdateDuration.toString() ~ " ago";
+
+        if (!server.pollingEnabled) {
+            result ~= " (disabled)";
+        }
+        return result;
     }
 
     string lastUpdateClass() {
