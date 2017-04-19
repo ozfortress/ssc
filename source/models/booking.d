@@ -80,7 +80,7 @@ class Booking {
     }
 
     void start() {
-        logInfo("Starting booking for %s", id);
+        logInfo("Starting booking for %s for %s", id, duration);
         auto now = cast(DateTime)Clock.currTime();
         auto timeout = endsAt - now;
         endTimer = setTimer(timeout, &end, false);

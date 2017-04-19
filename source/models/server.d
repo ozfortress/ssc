@@ -203,7 +203,7 @@ class Server {
 
         if (dirty) {
             // Give the server time to kick everyone before restarting
-            logInfo("Kicking Everyone");
+            logInfo("Kicking Everyone: %s", reason);
             sleep(SERVER_KICK_DELAY);
             logInfo("Kicked Everyone");
 
