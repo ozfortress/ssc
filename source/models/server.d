@@ -229,8 +229,12 @@ class Server {
      * Restart the server, killing and respawning
      */
     void restart() {
-        auto booking = this.booking;
-        if (booking !is null) booking.end();
+        synchronized (this) {
+            if (booking !is null) {
+                booking.destroy();
+                booking = null;
+            }
+        }
 
         if (running) kill();
         spawn();
@@ -312,6 +316,18 @@ class Server {
         synchronized (this) {
             processPipes.stdin.writeln(formatCommand(command, args));
             processPipes.stdin.flush();
+        }
+    }
+
+    /**
+     * Called when the watcher thread stops.
+     */
+    private void onServerStop() {
+        synchronized (this) {
+            if (booking !is null) {
+                booking.destroy();
+                booking = null;
+            }
         }
     }
 
@@ -427,6 +443,8 @@ class Server {
                 logError("'%s' Watcher: %s", name, e);
             }
         }
+        // Notify that the server stopped
+        onServerStop();
         logInfo("Terminated watcher for '%s'", name);
     }
 

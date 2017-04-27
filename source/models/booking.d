@@ -89,7 +89,7 @@ class Booking {
     }
 
     void end() {
-        synchronized(this) {
+        synchronized (this) {
             if (ended) return;
             ended = true;
         }
@@ -103,5 +103,12 @@ class Booking {
     /// Shared version of end
     void sharedEnd() shared {
         (cast(Booking)this).end();
+    }
+
+    void destroy() {
+        synchronized (this) {
+            ended = true;
+        }
+        Booking.store.remove(this);
     }
 }
