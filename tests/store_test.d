@@ -19,6 +19,10 @@ class Storeable {
         intField = i;
         dateTimeField = d;
     }
+
+    override string toString() const {
+        return (cast(Storeable)super).toString;
+    }
 }
 
 @("primary stringField add find store remove") unittest {
