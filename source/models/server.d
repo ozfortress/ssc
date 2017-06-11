@@ -30,7 +30,7 @@ class Server {
     static const MIN_IDLE_PLAYERS = 2;
     static const SERVER_KICK_DELAY = 5.dur!("seconds");
 
-    package static shared Store!(Server, "name") store; // Initialized in package.d
+    static shared Store!(Server, "name") store; // Initialized in package.d
 
     static Server get(string name) {
         return store.get(name);

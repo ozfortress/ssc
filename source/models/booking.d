@@ -11,7 +11,7 @@ import base32;
 import store;
 
 class Booking {
-    package static shared Store!(Booking, "id") store; // Initialized in package.d
+    static shared Store!(Booking, "id") store; // Initialized in package.d
 
     private static idFor(string client, string user) {
         return client ~ ":" ~ user;
