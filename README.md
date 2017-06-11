@@ -64,3 +64,24 @@ dub -c production
 ```
 
 Executable can be found in `bin/ssc`.
+
+## Deployment
+
+Deployment is done using capistrano.
+
+### Installing Dependencies
+
+Install [ruby](https://www.ruby-lang.org/).
+
+```bash
+gem install capistrano -v 3.7.1
+gem install capistrano-scm-copy
+```
+
+### To Deploy
+
+```bash
+cap production deploy
+```
+
+Relevant files will be copied to servers outlines in `config/deploy/production.rb`
