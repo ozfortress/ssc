@@ -15,3 +15,8 @@ logs/
 config/keys.json
 config/secrets.json
 config/servers.json
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class

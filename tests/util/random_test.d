@@ -1,4 +1,4 @@
-module util_random_test;
+module util.random_test;
 import unit_threaded;
 
 import std.algorithm;
