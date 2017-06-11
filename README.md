@@ -34,10 +34,25 @@ Built executable can be found in `bin/ssc`.
 
 ### Test
 
-To build and run tests
+To build and run tests you will also need:
+* python 3.5+
+* pyparsing
+* py.test (optional)
+
+`tests/support` contains a mock implementation of a source server written in
+python which is used in some tests to avoid running/installing a source
+dedicated server.
+
+Run the following to test SSC:
 
 ```bash
 dub test
+```
+
+Run the following to test the source server mock:
+
+```bash
+py.test tests/support/*
 ```
 
 ### Production
