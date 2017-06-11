@@ -122,6 +122,7 @@ class Server {
     bool willDelete = false;
     bool pollingEnabled = true;
     DList!string logs;
+    size_t logLength = LOG_LENGTH;
     ServerStatus status;
     Booking booking = null;
 
@@ -396,13 +397,13 @@ class Server {
     private void log(string line, bool cache = true) {
         if (logPath is null) {
             logPath = config.application.buildLogPath(name ~ ".log");
-            logs = DList!string(new string[LOG_LENGTH]);
+            logs = DList!string(new string[logLength]);
         }
 
         append(logPath, line ~ "\n");
         if (cache) {
             synchronized (this) {
-                logs.removeFront();
+                if (logLength != 0) logs.removeFront();
                 logs.insertBack(line);
             }
         }
