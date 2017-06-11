@@ -3,6 +3,8 @@ import models;
 
 import core.thread;
 import std.file;
+import std.conv;
+import std.range;
 import std.array;
 import std.string;
 import std.process;
@@ -15,11 +17,11 @@ import vibe.stream.stdio;
 import jsonizer : fromJSON;
 
 import store;
-import util.io;
 import util.json;
 import util.random;
 import util.source;
 import config.application;
+import supervisor.poller;
 
 class Server {
     static const POLL_INTERVAL = 15.dur!("seconds");
@@ -265,9 +267,6 @@ class Server {
             auto redirects = Redirect.stdin | Redirect.stdout | Redirect.stderrToStdout;
             processPipes = pipeProcess(params, redirects);
 
-            // Set the process's stdout as non-blocking
-            processPipes.stdout.markNonBlocking();
-
             processWatcher = new Thread(() => this.watcher).start();
             processPoller = new Thread(() => this.poller).start();
 
@@ -410,30 +409,15 @@ class Server {
     }
 
     /**
-     * Reads a line asynchronously from the process's stdout
+     * Reads a line from the process's stdout
      */
     private auto readline() {
-        string line;
-        synchronized (this) line = processPipes.stdout.readlnNoBlock();
-        if (line == null) return null;
-        line = line[0..$-1]; // source uses CRLF and readlnNoBlock stops at LF
+        auto line = processPipes.stdout.readln();
+        // Strip any line ending characters
+        line = line.stripRight!(chr => chr == '\n' || chr == '\r').text;
 
         log(line, true);
         return line;
-    }
-
-    private auto readlineRange(string firstLine) {
-        struct Range {
-            this(string f, Server s) {
-                front = f;
-                server = s;
-            }
-            string front;
-            Server server;
-            void popFront() { front = server.readline(); }
-            @property bool empty() { return front is null; }
-        }
-        return Range(firstLine, this);
     }
 
     /// Watcher thread for the server process
@@ -452,13 +436,10 @@ class Server {
     }
 
     private void watch() {
-        auto line = readline();
-        if (line == null) {
-            Thread.sleep(200.dur!"msecs");
-            return;
-        }
+        auto hasData = pollReadable(processPipes.stdout.fileno, dur!"msecs"(500));
+        if (!hasData) return;
 
-        auto range = readlineRange(line);
+        auto range = generate!(() => readline());
         if (status.parse(range)) {
             if (!status.running) {
                 status.sendPoll(this);
