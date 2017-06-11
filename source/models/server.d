@@ -248,19 +248,21 @@ class Server {
         synchronized (this) {
             enforce(!running);
 
-            auto options = this.options.byKeyValue.map!(o => [o.key, o.value]).reduce!"a ~ b".array;
+            // Reduce options map to an array
+            auto kvoptions = this.options.byKeyValue.map!(o => [o.key, o.value]);
+            string[] options = reduce!"a ~ b"(cast(string[])null, kvoptions);
+
             // Always enable the console
             options ~= "-console";
 
-            auto serverCommands = [executable] ~ options;
             // script captures /dev/tty in stdout
-            auto commands = ["unbuffer", "-p"] ~ serverCommands;
+            auto params = ["unbuffer", "-p", executable] ~ options;
 
-            log("Started with: %s".format(commands));
-            logInfo("Spawning %s with: %s", name, commands);
+            log("Started with: %s".format(params));
+            logInfo("Spawning %s with: %s", name, params);
 
             auto redirects = Redirect.stdin | Redirect.stdout | Redirect.stderrToStdout;
-            processPipes = pipeProcess(commands, redirects);
+            processPipes = pipeProcess(params, redirects);
 
             // Set the process's stdout as non-blocking
             processPipes.stdout.markNonBlocking();
