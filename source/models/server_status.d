@@ -35,6 +35,10 @@ struct ServerStatus {
         string address;
     }
 
+    void onServerStop() {
+        running = false;
+    }
+
     void sendPoll(Server server) {
         if (sent) {
             // Status is already sent, waiting on watcher to read the result

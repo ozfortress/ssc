@@ -309,6 +309,8 @@ class Server {
         }
         processWatcher.join();
         processPoller.join();
+
+        onServerStop();
     }
 
     /**
@@ -330,6 +332,8 @@ class Server {
                 booking.destroy();
                 booking = null;
             }
+
+            status.onServerStop();
         }
     }
 
@@ -393,18 +397,16 @@ class Server {
     }
 
     /// Writes to the server log file
-    private void log(string line, bool cache = true) {
+    private void log(string line) {
         if (logPath is null) {
             logPath = config.application.buildLogPath(name ~ ".log");
             logs = DList!string(new string[logLength]);
         }
 
         append(logPath, line ~ "\n");
-        if (cache) {
-            synchronized (this) {
-                if (logLength != 0) logs.removeFront();
-                logs.insertBack(line);
-            }
+        synchronized (this) {
+            if (logLength != 0) logs.removeFront();
+            logs.insertBack(line);
         }
     }
 
@@ -416,7 +418,7 @@ class Server {
         // Strip any line ending characters
         line = line.stripRight!(chr => chr == '\n' || chr == '\r').text;
 
-        log(line, true);
+        log(line);
         return line;
     }
 
