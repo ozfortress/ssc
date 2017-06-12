@@ -375,7 +375,11 @@ class Server {
      * Use to update settings on a running server by setting the dirty flag and waiting for a time to restart
      */
     private void reload(Server config) {
+        bool changed;
+
         synchronized (this) {
+            changed = executable != config.executable || options != config.options;
+
             executable = config.executable;
             options    = config.options;
 
@@ -391,7 +395,7 @@ class Server {
         }
 
         // Make dirty if server options change
-        if (executable != config.executable || options != config.options) {
+        if (changed) {
             makeDirty();
         }
     }
