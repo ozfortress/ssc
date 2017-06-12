@@ -23,6 +23,11 @@ struct BookingPresenter {
         return "/bookings/%s/delete".format(server.name);
     }
 
+    string demosURL() {
+        import base32;
+        return "https://demos.ozfortress.com/%s/%s".format(booking.client, Base32.encode(booking.user).toLower);
+    }
+
     Json toJson(bool includeServer = true) {
         auto j = Json([
             "client": Json(booking.client),

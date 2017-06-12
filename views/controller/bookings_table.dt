@@ -12,9 +12,10 @@ tr
     - auto p = BookingPresenter(booking);
     tr
         td= booking.client
-        td= booking.user
         td
-            a(href=p.server.path)= booking.server.name
+            a(href=p.demosURL)= booking.user
+        td
+            a(href=p.server.path, target="_blank")= booking.server.name
         td= booking.startedAt.toSimpleString()
         td= booking.endsAt.toSimpleString()
         td
