@@ -30,7 +30,7 @@ class Server {
     static const MIN_IDLE_PLAYERS = 2;
     static const SERVER_KICK_DELAY = 5.dur!("seconds");
 
-    package static shared Store!(Server, "name") store; // Initialized in package.d
+    static shared Store!(Server, "name") store; // Initialized in package.d
 
     static Server get(string name) {
         return store.get(name);
@@ -375,11 +375,6 @@ class Server {
      * Use to update settings on a running server by setting the dirty flag and waiting for a time to restart
      */
     private void reload(Server config) {
-        // Make dirty if server options change
-        if (executable != config.executable || options != config.options) {
-            makeDirty();
-        }
-
         synchronized (this) {
             executable = config.executable;
             options    = config.options;
@@ -393,6 +388,11 @@ class Server {
             bookingStartCommand = config.bookingStartCommand;
             bookingEndCommand   = config.bookingEndCommand;
             logPath             = config.logPath;
+        }
+
+        // Make dirty if server options change
+        if (executable != config.executable || options != config.options) {
+            makeDirty();
         }
     }
 

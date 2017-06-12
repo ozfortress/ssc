@@ -1,19 +1,12 @@
 module models.server_test;
 import unit_threaded;
+import support.mock_server;
 
 import core.thread;
 import std.array;
 import std.algorithm;
 
 import models.server;
-
-Server mockServer(string name) {
-    auto server = new Server;
-    server.name = name;
-    server.executable = "tests/support/mock_source_server.py";
-    server.logLength = 0;
-    return server;
-}
 
 void sleep() {
     Thread.sleep(dur!("msecs")(100));
