@@ -1,6 +1,9 @@
 # API (V1)
 
-The base path to all requests is: /api/v1
+The base path to all requests is: `/api/v1`
+
+The version guarantees backwards compatibility: No attribute will change meaning or value.
+However any attributes may be added or additional values become valid.
 
 All requests must include a valid `key` parameter as part of the query in the url.
 
