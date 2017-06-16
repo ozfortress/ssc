@@ -118,6 +118,7 @@ struct ServerPresenter {
             "status": Json(statusName),
             "address": Json(server.status.address),
             "connect-string": Json(connectString),
+            "bookable": Json(server.bookable),
         ]);
 
         if (includeBooking) j["booking"] = server.booking is null ? Json.undefined : booking.toJson;

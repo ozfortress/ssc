@@ -18,12 +18,14 @@ Example:
   "servers": [
     {
       "address": "",
+      "bookable": false,
       "connect-string": "connect ; password \"\"; rcon_password \"\"",
       "name": "ozfortress-1",
       "status": "Stopped"
     },
     {
       "address": "40.126.229.205:27016",
+      "bookable": true,
       "connect-string": "connect 40.126.229.205:27016; password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"; rcon_password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"",
       "name": "ozfortress-2",
       "status": "Active"
@@ -58,6 +60,7 @@ Example:
   "client": "client-name",
   "server": {
     "address": "40.126.229.205:27016",
+    "bookable": true,
     "connect-string": "connect 40.126.229.205:27016; password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"; rcon_password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"",
     "name": "ozfortress-2",
     "status": "Active"
@@ -81,6 +84,7 @@ Example:
   "client": "client-name",
   "server": {
     "address": "40.126.229.205:27016",
+    "bookable": true,
     "connect-string": "connect 40.126.229.205:27016; password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"; rcon_password \"X/psb0UOFEjog7uar7F2SCEvFqK8/1lvNvXnOKOcYTc=\"",
     "name": "ozfortress-2",
     "status": "Active"
