@@ -11,7 +11,7 @@ install:
   - dub fetch doveralls
 
 script:
-  - dub build
   - dub test
+  # TODO: Coverage
   # - rm .*.lst # hack for test coverage
   # - dub run doveralls
