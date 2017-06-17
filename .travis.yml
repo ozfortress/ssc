@@ -11,6 +11,7 @@ install:
   - dub fetch doveralls
 
 script:
+  - mkdir logs
   - dub test
   # TODO: Coverage
   # - rm .*.lst # hack for test coverage
