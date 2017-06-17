@@ -12,6 +12,6 @@ install:
 
 script:
   - dub build
-  - dub test -b unittest-cov --build-mode=allAtOnce
-  - rm .*.lst # hack for test coverage
-  - dub run doveralls
+  - dub test
+  # - rm .*.lst # hack for test coverage
+  # - dub run doveralls
