@@ -2,6 +2,11 @@ language: d
 d:
   - dmd
 
+addons:
+  apt:
+    packages:
+    - libevent-dev
+
 install:
   - dub fetch doveralls
 
