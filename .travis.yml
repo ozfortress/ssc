@@ -6,7 +6,7 @@ addons:
   apt:
     packages:
     - libevent-dev
-    - unbuffer
+    - expect
 
 install:
   - dub fetch doveralls
