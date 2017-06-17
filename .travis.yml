@@ -7,11 +7,13 @@ addons:
     packages:
     - libevent-dev
     - expect-dev
+    - python3
 
 install:
   - dub fetch doveralls
 
 script:
+  - pip3 install pyparsing
   - mkdir logs
   - dub test
   # TODO: Coverage
