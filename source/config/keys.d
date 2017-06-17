@@ -8,9 +8,9 @@ import config.application;
 
 const CONFIG_FILE = "keys.json";
 
-private const shared static string[string] _keys;
+private shared static string[string] _keys;
 
-shared static this() {
+void init() {
     auto json = readJSON(buildConfigPath(CONFIG_FILE));
 
     shared string[string] keys;

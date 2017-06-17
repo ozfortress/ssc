@@ -1,5 +1,7 @@
 # SSC (Source Server Controller)
 
+[![Build Status](https://travis-ci.org/ozfortress/ssc.svg?branch=master)](https://travis-ci.org/ozfortress/ssc)
+
 A web application that manages source servers.
 Also has optional support for server booking.
 Developed using [D](https://dlang.org/) and [vibe.d](https://vibed.org/).
