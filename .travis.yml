@@ -13,7 +13,7 @@ install:
 
 script:
   - mkdir logs
-  - dub test --coverage --combined
+  - dub test
   # TODO: Coverage
   # - rm .*.lst # hack for test coverage
   # - dub run doveralls
