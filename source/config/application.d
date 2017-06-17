@@ -31,7 +31,7 @@ private struct Settings {
 
 private shared Settings _settings;
 
-shared static this() {
+void init() {
     auto json = readJSON(buildConfigPath(ENVIRONMENTS_PATH, envName ~ ".json"));
     auto common = readJSON(buildConfigPath(CONFIG_FILE));
     json.merge(common);

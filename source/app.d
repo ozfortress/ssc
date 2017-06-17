@@ -2,10 +2,16 @@ import vibe.d;
 
 static import models;
 static import web.routes;
+static import config.keys;
 static import config.application;
 
 version (unittest) {} else
 shared static this() {
+    // Initialize configs
+    config.keys.init();
+    config.application.init();
+
+
 	auto settings = config.application.serverSettings;
 
     // Log access to the log file
