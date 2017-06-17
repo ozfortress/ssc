@@ -32,7 +32,7 @@ configuration "unittest" {
     sourcePaths "source" "tests"
     importPaths "source" "tests"
     preBuildCommands "dub run unit-threaded -c gen_ut_main -- -f tmp/ut.d"
-    versions "VibeCustomMain"
+    versions "VibeCustomMain" "unitUnthreaded"
 
     dependency "unit-threaded" version="*"
 }
