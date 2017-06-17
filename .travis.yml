@@ -11,6 +11,6 @@ install:
   - dub fetch doveralls
 
 script:
-  - dub test -b unittest-cov --combined
+  - dub test -b unittest-cov --combined --build-mode=allAtOnce
   - rm .*.lst # hack for test coverage
   - dub run doveralls
