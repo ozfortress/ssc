@@ -12,7 +12,7 @@ bin/
 logs/
 
 ## Secrets
-config/keys.json
+config/clients.json
 config/secrets.json
 config/servers.json
 

@@ -1,0 +1,11 @@
+[
+    {
+        "name": "admin-key-name",
+        "secret": "ABCDEFGHIJKLMNOPQRSECRET",
+        "isAdmin": true
+    },
+    {
+        "name": "some-api-key",
+        "secret": "ABCDEFGHIJKLMNOPQRSECRET2"
+    }
+]

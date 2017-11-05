@@ -51,3 +51,4 @@ version (Posix) {
         return timeval(splits.seconds, splits.usecs);
     }
 }
+// TODO: Support for other operating systems
