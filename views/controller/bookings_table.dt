@@ -11,7 +11,7 @@ tr
 - foreach (booking; bookings)
     - auto p = BookingPresenter(booking);
     tr
-        td= booking.client
+        td= booking.client.name
         td= booking.user
         td
             a(href=p.server.path)= booking.server.name

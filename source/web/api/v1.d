@@ -9,7 +9,7 @@ import vibe.d;
 import store;
 import models;
 import presenters;
-static import config.keys;
+import config.clients;
 
 class SSCV1APIImpl : SSCV1API {
     private ServerAPIImpl serverApi;
@@ -30,7 +30,7 @@ class SSCV1APIImpl : SSCV1API {
 }
 
 class ServerAPIImpl : ServerV1API {
-    Json get(string client) {
+    Json get(Client client) {
         auto servers = Server.all;
 
         auto result = Json.emptyObject;
@@ -39,13 +39,13 @@ class ServerAPIImpl : ServerV1API {
         return result;
     }
 
-    void postRestart(string client) {
+    void postRestart(Client client) {
         Server.restartAll;
     }
 }
 
 class BookingAPIImpl : BookingV1API {
-    Json create(string client, string user, ushort hours) {
+    Json create(Client client, string user, ushort hours) {
         Booking booking;
         try {
             booking = Booking.create(client, user, hours.dur!"hours");
@@ -56,14 +56,14 @@ class BookingAPIImpl : BookingV1API {
         return BookingPresenter(booking).toJson;
     }
 
-    Json get(string _user, string client) {
+    Json get(string _user, Client client) {
         auto booking = Booking.find(client, _user);
         enforceHTTP(booking !is null, HTTPStatus.notFound, "Booking not found");
 
         return BookingPresenter(booking).toJson;
     }
 
-    void remove(string _user, string client) {
+    void remove(string _user, Client client) {
         auto booking = Booking.find(client, _user);
         enforceHTTP(booking !is null, HTTPStatus.notFound, "Booking not found");
 

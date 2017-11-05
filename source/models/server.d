@@ -158,7 +158,7 @@ class Server {
         reset();
 
         if (bookingStartCommand !is null) {
-            auto command = bookingStartCommand.replace("{client}", booking.client)
+            auto command = bookingStartCommand.replace("{client}", booking.client.name)
                                               .replace("{user}", booking.userEscaped);
             sendCMD(command);
         }
@@ -175,7 +175,7 @@ class Server {
         reset();
 
         if (bookingEndCommand !is null) {
-            auto command = bookingEndCommand.replace("{client}", booking.client)
+            auto command = bookingEndCommand.replace("{client}", booking.client.name)
                                             .replace("{user}", booking.userEscaped);
             sendCMD(command);
         }

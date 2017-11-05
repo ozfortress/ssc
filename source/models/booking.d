@@ -9,12 +9,13 @@ import vibe.d;
 import base32;
 
 import store;
+import config.clients;
 
 class Booking {
     static shared Store!(Booking, "id") store; // Initialized in package.d
 
-    private static idFor(string client, string user) {
-        return client ~ ":" ~ user;
+    private static idFor(Client client, string user) {
+        return client.name ~ ":" ~ user;
     }
 
     static @property auto all() {
@@ -25,11 +26,11 @@ class Booking {
         return store.findBy!"server"(server);
     }
 
-    static auto find(string client, string user) {
+    static auto find(Client client, string user) {
         return store.get(idFor(client, user));
     }
 
-    static Booking create(string client, string user, Duration duration) {
+    static Booking create(Client client, string user, Duration duration) {
         if (store.exists(idFor(client, user))) {
             throw new StoreException("Booking already exists");
         }
@@ -48,7 +49,7 @@ class Booking {
         return booking;
     }
 
-    string client;
+    Client client;
     string user;
     Server server;
     DateTime startedAt;
@@ -70,7 +71,7 @@ class Booking {
         return Base32.encode(cast(ubyte[])user).toLower;
     }
 
-    private this(string client, string user, Server server, DateTime endsAt) {
+    private this(Client client, string user, Server server, DateTime endsAt) {
         this.client = client;
         this.user = user;
         this.server = server;

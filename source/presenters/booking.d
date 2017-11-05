@@ -25,7 +25,7 @@ struct BookingPresenter {
 
     Json toJson(bool includeServer = true) {
         auto j = Json([
-            "client": Json(booking.client),
+            "client": Json(booking.client.name),
             "user": Json(booking.user),
             "startedAt": Json(booking.startedAt.toISOExtString),
             "endsAt": Json(booking.endsAt.toISOExtString),

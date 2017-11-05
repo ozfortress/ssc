@@ -2,13 +2,13 @@ import vibe.d;
 
 static import models;
 static import web.routes;
-static import config.keys;
+static import config.clients;
 static import config.application;
 
 version (unittest) {} else
 shared static this() {
     // Initialize configs
-    config.keys.init();
+    config.clients.init();
     config.application.init();
 
 

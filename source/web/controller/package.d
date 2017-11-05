@@ -6,16 +6,18 @@ public {
 }
 
 mixin template WebInterface() {
-    static import config.keys;
-    string key;
-    string client;
+    import config.clients : authenticate, Client;
+    Client client;
 
     private void requireAuthentication(scope HTTPServerRequest req, scope HTTPServerResponse res) {
         performBasicAuth(req, res, "all", (string username, string password) {
             if (username != "") return false;
-            key = password;
-            client = config.keys.authenticate(key);
-            return client !is null;
+
+            auto client = authenticate(password);
+            if (client.isNull) return false;
+
+            this.client = client.get;
+            return client.isAdmin;
         });
     }
 
