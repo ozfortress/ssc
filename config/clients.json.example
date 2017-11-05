@@ -6,6 +6,7 @@
     },
     {
         "name": "some-api-key",
-        "secret": "ABCDEFGHIJKLMNOPQRSECRET2"
+        "secret": "ABCDEFGHIJKLMNOPQRSECRET2",
+        "isAdmin": false
     }
 ]
