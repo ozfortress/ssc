@@ -2,14 +2,19 @@
 	"fileVersion": 1,
 	"versions": {
 		"base32": "0.1.0",
+		"botan": "1.12.9",
+		"botan-math": "1.0.3",
 		"chap": "0.4.0",
-		"diet-ng": "1.2.1",
-		"jsonizer": "0.7.3",
+		"diet-ng": "1.4.3",
+		"eventcore": "0.8.21",
+		"jsonizer": "0.7.4",
 		"libasync": "0.8.3",
 		"libevent": "2.0.2+2.0.16",
 		"memutils": "0.4.9",
 		"openssl": "1.1.5+1.0.1g",
-		"unit-threaded": "0.7.24",
-		"vibe-d": "0.7.31"
+		"taggedalgebraic": "0.10.7",
+		"unit-threaded": "0.7.31",
+		"vibe-core": "1.2.0",
+		"vibe-d": "0.8.1"
 	}
 }
