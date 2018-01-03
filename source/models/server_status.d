@@ -1,124 +1,96 @@
 module models.server_status;
 import models;
 
+import vibe.d;
+
 import std.conv;
+import std.stdio;
+import std.range;
 import std.regex;
 import std.string;
 import std.datetime;
 import std.exception;
 import std.algorithm;
 
-struct ServerStatus {
-    string hostname;
-    string address;
-    string map;
-    size_t humanPlayers = 0;
-    size_t botPlayers = 0;
-    size_t maxPlayers = 0;
-    string password;
-    string rconPassword;
-    Player[] players;
+struct ServerStatusParser {
+    // Parse state
+    private {
+        enum StatusState {
+            initial,
+            header,
+            table,
+        }
 
-    bool hybernating = false;
-    bool running = false;
-    DateTime lastUpdate;
-
-    bool sent; // State for poll/watch
-
-    struct Player {
-        uint id;
-        string name;
-        string steamId;
-        uint ping;
-        uint loss;
-        string state;
-        string address;
+        auto statusState = StatusState.initial;
     }
 
-    void onServerStop() {
-        running = false;
+    bool parse(ServerStatus* status, string line) {
+        if (statusState == StatusState.initial) {
+            return parseLine(status, line);
+        } else if (statusState == StatusState.header) {
+            parseHeader(status, line);
+        } else if (statusState == StatusState.table) {
+            parseTable(status, line);
+        }
+
+        return false;
     }
 
-    void sendPoll(Server server) {
-        if (sent) {
-            // Status is already sent, waiting on watcher to read the result
+    private bool parseLine(ServerStatus* status, string line) {
+        if (line.startsWith("hostname: ")) {
+            status.running = true;
+            status.lastStatusUpdate = cast(DateTime)Clock.currTime();
+
+            statusState = StatusState.header;
+
+            parseHeader(status, line);
+
+            return true;
+        } else if (matchVariable(line, "sv_password")) {
+            status.password = parseVariable(line);
+        } else if (matchVariable(line, "rcon_password")) {
+            status.rconPassword = parseVariable(line);
+        } else if (line.strip() == "Killed") {
+            status.running = false;
+        }
+
+        return false;
+    }
+
+    private void parseHeader(ServerStatus* status, string line) {
+        auto separatorIndex = line.indexOf(':');
+        // Move to parsing the table, if the table header was encountered (It doesn't have a `:` in it)
+        if (separatorIndex == -1) {
+            statusState = StatusState.table;
             return;
         }
-        sent = true;
-        server.sendCMD("status");
-        server.sendCMD("sv_password");
-        server.sendCMD("rcon_password");
+
+        auto title = line[0..separatorIndex].strip();
+        auto value = line[separatorIndex + 1..$].strip();
+
+        switch (title) {
+            case "hostname":
+                status.hostname = value;
+                break;
+            case "udp/ip":
+                status.address = parseUDPIP(value);
+                break;
+            case "map":
+                status.map = value.split(" ")[0];
+                break;
+            case "players":
+                status.humanPlayers = value.matchFirst(`\d+ humans`).front.split(" ")[0].to!size_t;
+                status.botPlayers = value.matchFirst(`\d+ bots`).front.split(" ")[0].to!size_t;
+                status.maxPlayers = value.matchFirst(`\d+ max`).front.split(" ")[0].to!size_t;
+                break;
+            default:
+                break;
+        }
     }
 
-    bool parse(R)(R range) {
-        enforce(!range.empty);
-        auto line = range.front;
-
-        // status command
-        if (line.startsWith("hostname: ")) {
-            sent = false; // Allow another status update to be queried
-            running = true; // Once we read a status, the server is properly responding
-            lastUpdate = cast(DateTime)Clock.currTime();
-
-            parseStatus(range);
-        } else if (matchVariable(line, "sv_password")) {
-            password = parseVariable(line);
-        } else if (matchVariable(line, "rcon_password")) {
-            rconPassword = parseVariable(line);
-        }
-        // TODO: Hybernation/Wakeup
-        /*else if (line == "Server is hibernating") {
-            status.hybernating = true;
-        }*/
-        else if (line == "Killed") {
-            running = false;
-            sent = false;
-        } else {
-            return false;
-        }
-        return true;
-    }
-
-    private void parseStatus(R)(R range) {
-        foreach (line; range) {
-            auto split = line.splitter(":");
-            if (split.empty) break;
-            const head = split.front.strip();
-            split.popFront();
-            if (split.empty) break;
-            const value = split.join(":").strip();
-
-            switch (head) {
-                case "hostname":
-                    hostname = value;
-                    break;
-                case "udp/ip":
-                    address = parseUDPIP(value);
-                    break;
-                case "map":
-                    map = value.split(" ")[0];
-                    break;
-                case "players":
-                    humanPlayers = value.matchFirst(`\d+ humans`).front.split(" ")[0].to!size_t;
-                    botPlayers = value.matchFirst(`\d+ bots`).front.split(" ")[0].to!size_t;
-                    maxPlayers = value.matchFirst(`\d+ max`).front.split(" ")[0].to!size_t;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // Parse until the players header
-        foreach (line; range) {
-            if (line.startsWith("# userid")) break;
-        }
-
-        // Parser players list
-        // TODO
-        /*foreach (index; 0..status.humanPlayers + status.botPlayers) {
-            line = readline();
-            if (line is null) return;
-        }*/
+    private void parseTable(ServerStatus* status, string line) {
+        // TODO: Actually parse players
+        statusState = StatusState.initial;
     }
 
     private string parseUDPIP(const string line) {
@@ -139,4 +111,68 @@ struct ServerStatus {
     private string parseVariable(string line) {
         return line.split(" = ")[1].split(`"`)[1];
     }
+}
+
+struct ServerStatus {
+    struct Player {
+        uint id;
+        string name;
+        string steamId;
+        uint ping;
+        uint loss;
+        string state;
+        string address;
+    }
+
+    string hostname;
+    string address;
+    string map;
+    size_t humanPlayers = 0;
+    size_t botPlayers = 0;
+    size_t maxPlayers = 0;
+    string password;
+    string rconPassword;
+    Player[] players;
+
+    bool hybernating = false;
+    bool running = false;
+    DateTime lastStatusUpdate;
+
+    void onServerStop() {
+        running = false;
+    }
+}
+
+unittest {
+    auto result = `
+blah
+blah
+hostname: ozfortress.com 16 :: hosted by infinite.net.au
+version : 4218712/24 4218712 secure
+udp/ip  : 0.0.0.0:27161  (public ip: 119.15.96.156)
+steamid : [A:1:279956484:9268] (90111798584265732)
+account : not logged in  (No account specified)
+map     : cp_process_final at: 0 x, 0 y, 0 z
+tags    : cp,nocrits,ozfortress
+sourcetv:  port 27164, delay 90.0s
+players : 0 humans, 1 bots (25 max)
+edicts  : 1047 used of 2048 max
+# userid name                uniqueid            connected ping loss state  adr
+#      2 "SourceTV"          BOT                                     active
+sv_password
+"sv_password" = "abcdefg" ( def. "" )
+ notify
+ - Server password for entry into multiplayer games
+rcon_password
+"rcon_password" = "hijklmnop" ( def. "" )`;
+
+    ServerStatus status;
+    ServerStatusParser parser;
+    foreach (line; result.split("\n")) {
+        parser.parse(&status, line);
+    }
+
+    assert(status.maxPlayers == 25);
+    assert(status.password == "abcdefg");
+    assert(status.rconPassword == "hijklmnop");
 }

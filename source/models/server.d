@@ -15,20 +15,21 @@ import std.container;
 import vibe.d;
 import vibe.stream.stdio;
 import jsonizer : fromJSON;
+import supervised;
 
 import store;
 import util.json;
 import util.random;
 import util.source;
 import config.application;
-import supervisor.poller;
 
 class Server {
-    static const POLL_INTERVAL = 15.dur!("seconds");
-    static const POLL_TIMEOUT = 2.dur!("minutes");
+    static const POLL_INTERVAL = 15.dur!"seconds";
+    static const POLL_TIMEOUT = 2.dur!"minutes";
     static const LOG_LENGTH = 30;
     static const MIN_IDLE_PLAYERS = 2;
-    static const SERVER_KICK_DELAY = 5.dur!("seconds");
+    static const SERVER_KICK_DELAY = 5.dur!"seconds";
+    static const IDLE_BOOKING_UNIT = "minutes";
 
     static shared Store!(Server, "name") store; // Initialized in package.d
 
@@ -126,15 +127,23 @@ class Server {
     DList!string logs;
     size_t logLength = LOG_LENGTH;
     ServerStatus status;
+    ServerStatusParser statusParser;
     Booking booking = null;
 
     private {
-        ProcessPipes processPipes;
-        Thread processWatcher;
-        Thread processPoller;
-        bool statusSent = false;
+        shared ProcessMonitor processMonitor;
 
         DateTime lastActive;
+        Timer idleTimeoutTimer;
+        Timer pollTimer;
+        Timer pollTimeoutTimer;
+
+        enum TimerType {
+            idleTimeout,
+            poll,
+            pollTimeout,
+        }
+        Task timerTask;
     }
 
     @property auto available() {
@@ -146,14 +155,53 @@ class Server {
     }
 
     this() {
+        processMonitor = new shared ProcessMonitor;
+
+        processMonitor.stdoutCallback = (line) @trusted => this.onReadLine(line);
+        processMonitor.stderrCallback = (line) @trusted => this.onReadLine(line);
+        processMonitor.terminateCallback = () @trusted => this.onServerStop();
+
+        idleTimeoutTimer = createTimer(() @trusted => this.onIdleBookingTimeout());
+        pollTimer = createTimer(() @trusted => this.sendPoll());
+        pollTimeoutTimer = createTimer(() @trusted => this.onPollTimeout());
+
+        // Timers can only be manipulated from the thread that created them, ie. the main thread.
+        // So we need to start a task that handles the timers for us
+        // TODO: Kill this task when the server dies
+        timerTask = runTask({
+            auto running = true;
+            while (running) {
+                std.concurrency.receive(
+                    (TimerType type, Duration duration) {
+                        Timer timer;
+                        final switch (type) {
+                            case TimerType.idleTimeout:
+                                timer = idleTimeoutTimer;
+                                break;
+                            case TimerType.poll:
+                                timer = pollTimer;
+                                break;
+                            case TimerType.pollTimeout:
+                                timer = pollTimeoutTimer;
+                                break;
+                        }
+                        timer.rearm(duration);
+                    },
+                    (bool _) {
+                        running = false;
+                    },
+                );
+            }
+        });
     }
 
     /**
      * Hook for when a booking starts
      */
     void onBookingStart(Booking booking) {
-        resetIdleTimer();
         this.booking = booking;
+
+        idleTimeoutTimer.rearm(idleBookingTimeout.dur!IDLE_BOOKING_UNIT);
 
         reset();
 
@@ -172,7 +220,9 @@ class Server {
             dirty = true;
         }
 
-        reset();
+        if (idleTimeoutTimer) idleTimeoutTimer.stop();
+
+        if (!willDelete) reset();
 
         if (bookingEndCommand !is null) {
             auto command = bookingEndCommand.replace("{client}", booking.client.name)
@@ -181,6 +231,8 @@ class Server {
         }
 
         this.booking = null;
+
+        if (willDelete) remove();
     }
 
     /**
@@ -239,7 +291,10 @@ class Server {
             }
         }
 
-        if (running) kill();
+        try {
+            processMonitor.kill();
+            processMonitor.wait();
+        } catch (Exception e) {}
         spawn();
     }
 
@@ -249,8 +304,6 @@ class Server {
      */
     void spawn() {
         synchronized (this) {
-            enforce(!running);
-
             // Reduce options map to an array
             auto kvoptions = this.options.byKeyValue.map!(o => [o.key, o.value]);
             string[] options = reduce!"a ~ b"(cast(string[])null, kvoptions);
@@ -261,19 +314,13 @@ class Server {
             // script captures /dev/tty in stdout
             auto params = ["unbuffer", "-p", executable] ~ options;
 
-            log("Started with: %s".format(params));
-            logInfo("Spawning %s with: %s", name, params);
+            processMonitor.start(params.idup);
 
-            auto redirects = Redirect.stdin | Redirect.stdout | Redirect.stderrToStdout;
-            processPipes = pipeProcess(params, redirects);
-
-            processWatcher = new Thread(() => this.watcher).start();
-            processPoller = new Thread(() => this.poller).start();
+            resetPollTimers();
 
             dirty = false;
             reset();
-            statusSent = false;
-            status.sendPoll(this);
+            sendPoll();
         }
     }
 
@@ -281,50 +328,26 @@ class Server {
      * Check whether the server process is running
      */
     @property bool running() @safe {
-        synchronized (this) {
-            if (processPipes.pid is null) return false;
-
-            auto status = processPipes.pid.tryWait();
-            return !status.terminated;
-        }
+        return processMonitor.running;
     }
 
     /**
      * Kill the running server
      */
     void kill() {
-        synchronized (this) {
-            enforce(running);
-
-            logInfo("Killing %s".format(name));
-            processPipes.stdin.close();
-            processPipes.stdout.close();
-            processPipes.pid.kill();
-            processPipes.pid.wait();
-            processPipes = typeof(processPipes).init;
-            enforce(!running);
-
-            // Reset status
-            status = ServerStatus();
-        }
-        processWatcher.join();
-        processPoller.join();
-
-        onServerStop();
+        processMonitor.kill();
     }
 
     /**
      * Send a command to the server via a source console
      */
     void sendCMD(string command, string[] args...) {
-        synchronized (this) {
-            processPipes.stdin.writeln(formatCommand(command, args));
-            processPipes.stdin.flush();
-        }
+        auto line = formatCommand(command, args);
+        processMonitor.send(line);
     }
 
     /**
-     * Called when the watcher thread stops.
+     * Called when the process stops
      */
     private void onServerStop() {
         synchronized (this) {
@@ -352,22 +375,10 @@ class Server {
     private void remove() {
         if (running) kill();
 
+        // Kill the timer task as well
+        timerTask.send(true);
+
         store.remove(this);
-}
-
-    /**
-     * Resets the timer for ending a booking when plays are idle on the server.
-     */
-    private void resetIdleTimer() {
-        this.lastActive = cast(DateTime)Clock.currTime();
-    }
-
-    /**
-     * Checks whether the idle timer has timed out.
-     */
-    private @property bool idleTimedOut() {
-        auto now = cast(DateTime)Clock.currTime();
-        return this.lastActive + idleBookingTimeout.dur!"minutes" < now;
     }
 
     /**
@@ -400,13 +411,28 @@ class Server {
         }
     }
 
-    /// Writes to the server log file
+    // Callback for when a line is read from the server
+    private void onReadLine(string line) {
+        // Parse the output to check for status updates
+        if (statusParser.parse(&status, line)) {
+            resetPollTimers();
+
+            if (idleTimeoutTimer && booking &&  status.humanPlayers >= MIN_IDLE_PLAYERS) {
+                timerTask.tid.send(TimerType.idleTimeout, cast(Duration)idleBookingTimeout.dur!IDLE_BOOKING_UNIT);
+            }
+        }
+
+        log(line);
+    }
+
     private void log(string line) {
+        // Create the log file if it doesn't exist
         if (logPath is null) {
             logPath = config.application.buildLogPath(name ~ ".log");
             logs = DList!string(new string[logLength]);
         }
 
+        // Write to the server log file
         append(logPath, line ~ "\n");
         synchronized (this) {
             if (logLength != 0) logs.removeFront();
@@ -414,87 +440,24 @@ class Server {
         }
     }
 
-    /**
-     * Reads a line from the process's stdout
-     */
-    private auto readline() {
-        auto line = processPipes.stdout.readln();
-        // Strip any line ending characters
-        line = line.stripRight!(chr => chr == '\n' || chr == '\r').text;
-
-        log(line);
-        return line;
+    private void sendPoll() {
+        sendCMD("status");
+        sendCMD("sv_password");
+        sendCMD("rcon_password");
     }
 
-    /// Watcher thread for the server process
-    private void watcher() {
-        logInfo("Started watcher for '%s'", name);
-        while (running) {
-            try {
-                watch();
-            } catch (Throwable e) {
-                logError("'%s' Watcher: %s", name, e);
-            }
-        }
-        // Notify that the server stopped
-        onServerStop();
-        logInfo("Terminated watcher for '%s'", name);
+    private void onPollTimeout() {
+        // After a large timeout, send the poll again. Adds stability for the case when srcds misses a poll
+        sendPoll();
+        log("SSC: Poll Timeout");
     }
 
-    private void watch() {
-        auto hasData = pollReadable(processPipes.stdout.fileno, dur!"msecs"(500));
-        if (!hasData) return;
-
-        auto range = generate!(() => readline());
-        if (status.parse(range)) {
-            if (!status.running) {
-                status.sendPoll(this);
-            }
-
-            // Check for idle timeouts
-            if (booking !is null && idleBookingTimeout > 0) {
-                if (status.humanPlayers >= MIN_IDLE_PLAYERS) {
-                    resetIdleTimer();
-                } else if (idleTimedOut()) {
-                    runWorkerTask!(Booking.sharedEnd)(cast(shared)booking);
-                }
-            }
-        }
+    private void onIdleBookingTimeout() {
+        booking.end();
     }
 
-    /// Poller thread for the server process
-    private void poller() {
-        logInfo("Started poller for %s", name);
-        while (running) {
-            try {
-                poll();
-            } catch (Throwable e) {
-                logError("'%s' Poller: %s", name, e);
-            }
-        }
-        logInfo("Terminated poller for %s", name);
-    }
-
-    private void poll() {
-        auto startTime = Clock.currTime();
-
-        while (true) {
-            if (!running) return;
-
-            auto now = Clock.currTime();
-            if (now - startTime > POLL_INTERVAL) {
-                break;
-            }
-            Thread.sleep(200.dur!"msecs");
-        }
-
-        // If we didn't get first poll within the timeout time, send again.
-        // Sometimes srcds likes to ignore the first 'status'
-        auto now = Clock.currTime();
-        auto pollingTimeout = now - startTime > POLL_TIMEOUT;
-
-        if (pollingEnabled && (status.running || pollingTimeout)) {
-            status.sendPoll(this);
-        }
+    private void resetPollTimers() {
+        timerTask.tid.send(TimerType.poll, cast(Duration)POLL_INTERVAL);
+        timerTask.tid.send(TimerType.pollTimeout, cast(Duration)POLL_TIMEOUT);
     }
 }

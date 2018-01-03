@@ -4,9 +4,13 @@ static import models;
 static import web.routes;
 static import config.clients;
 static import config.application;
+static import supervised.logging;
+static import std.experimental.logger;
 
 version (unittest) {} else
 shared static this() {
+    //supervised.logging.logger.logLevel = std.experimental.logger.LogLevel.trace;
+
     // Initialize configs
     config.clients.init();
     config.application.init();
