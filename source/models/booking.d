@@ -101,11 +101,6 @@ class Booking {
         Booking.store.remove(this);
     }
 
-    /// Shared version of end
-    void sharedEnd() shared {
-        (cast(Booking)this).end();
-    }
-
     void destroy() {
         synchronized (this) {
             ended = true;

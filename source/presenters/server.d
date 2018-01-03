@@ -88,12 +88,12 @@ struct ServerPresenter {
 
     auto lastUpdateDuration() {
         auto now = cast(DateTime)Clock.currTime();
-        return now - server.status.lastUpdate;
+        return now - server.status.lastStatusUpdate;
     }
 
     string lastUpdate() {
         auto result = "";
-        if (server.status.lastUpdate == DateTime.init) {
+        if (server.status.lastStatusUpdate == DateTime.init) {
             result ~= "never";
         } else {
             result ~= lastUpdateDuration.toString() ~ " ago";
