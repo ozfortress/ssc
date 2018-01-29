@@ -453,7 +453,9 @@ class Server {
     }
 
     private void onIdleBookingTimeout() {
-        booking.end();
+        synchronized (this) {
+            if (booking !is null) booking.end();
+        }
     }
 
     private void resetPollTimers() {
