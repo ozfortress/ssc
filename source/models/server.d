@@ -453,9 +453,11 @@ class Server {
     }
 
     private void onIdleBookingTimeout() {
-        synchronized (this) {
-            if (booking !is null) booking.end();
-        }
+        // TODO: Come up with a way to do synchronization properly
+        //synchronized (this) {
+        auto booking = this.booking;
+        if (booking !is null) booking.end();
+        //}
     }
 
     private void resetPollTimers() {
