@@ -30,8 +30,8 @@ shared static this() {
     // Better log formatting
     setLogFormat(FileLogger.Format.thread, FileLogger.Format.thread);
 
-    // Reload servers
-    models.Server.reload();
+    // Reload servers. Must happen after the main loop starts, so do it in a task.
+    runTask(() => models.Server.reload());
 
 	listenHTTP(settings, web.routes.router);
 	logInfo("See status at http://127.0.0.1:%s/status".format(settings.port));
