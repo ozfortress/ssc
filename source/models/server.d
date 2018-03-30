@@ -454,9 +454,13 @@ class Server {
     }
 
     private void sendPoll() {
-        sendCMD("status");
-        sendCMD("sv_password");
-        sendCMD("rcon_password");
+        try {
+            sendCMD("status");
+            sendCMD("sv_password");
+            sendCMD("rcon_password");
+        } catch (InvalidStateException error) {
+            logWarn("Failed to send poll, process not running");
+        }
     }
 
     private void onPollTimeout() {
