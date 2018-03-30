@@ -23,6 +23,18 @@ import util.random;
 import util.source;
 import config.application;
 
+auto createTimer(void delegate() @safe callback) @safe {
+    return vibe.core.core.createTimer(() @trusted nothrow {
+        try {
+            callback();
+        } catch (Exception error) {
+            logWarn("Timer callback failed: %s", error.toString().sanitize);
+
+            scope (failure) assert(false);
+        }
+    });
+}
+
 class Server {
     static const POLL_INTERVAL = 15.dur!"seconds";
     static const POLL_TIMEOUT = 2.dur!"minutes";
@@ -336,6 +348,7 @@ class Server {
      */
     void kill() {
         processMonitor.kill();
+        processMonitor.wait();
     }
 
     /**
