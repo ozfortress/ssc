@@ -9,7 +9,7 @@ import std.algorithm;
 import models.server;
 
 void sleep() {
-    Thread.sleep(dur!("msecs")(100));
+    Thread.sleep(dur!("msecs")(500));
 }
 
 @("running") unittest {
