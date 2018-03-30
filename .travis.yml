@@ -11,7 +11,7 @@ before_install:
 
 install:
   - mkdir logs
-  - pip3 install pyparsing
+  - sudo pip3 install pyparsing
   - dub fetch doveralls
 
 script:
