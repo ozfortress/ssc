@@ -1,6 +1,8 @@
 module models.booking;
 import models;
 
+import core.time;
+
 import std.ascii;
 import std.datetime;
 import std.exception;
@@ -40,8 +42,7 @@ class Booking {
         auto server = servers.front;
         enforce(server.running); // Sanity
 
-        auto endsAt = cast(DateTime)Clock.currTime() + duration;
-        auto booking = new Booking(client, user, server, endsAt);
+        auto booking = new Booking(client, user, server, duration);
         store.add(booking);
 
         // Start the booking after successful store
@@ -52,6 +53,7 @@ class Booking {
     Client client;
     string user;
     Server server;
+    Duration duration;
     DateTime startedAt;
     DateTime endsAt;
     bool ended;
@@ -62,29 +64,24 @@ class Booking {
         return idFor(client, user);
     }
 
-    @property auto duration() {
-        return endsAt - startedAt;
-    }
-
     /// Returns user base32 encoded in lower-case
     @property auto userEscaped() {
         return Base32.encode(cast(ubyte[])user).toLower;
     }
 
-    private this(Client client, string user, Server server, DateTime endsAt) {
+    private this(Client client, string user, Server server, Duration duration) {
         this.client = client;
         this.user = user;
         this.server = server;
-        this.endsAt = endsAt;
+        this.duration = duration;
         this.startedAt = cast(DateTime)Clock.currTime();
+        this.endsAt = this.startedAt + duration;
         this.ended = false;
     }
 
-    void start() {
+    private void start() {
         logInfo("Starting booking for %s for %s", id, duration);
-        auto now = cast(DateTime)Clock.currTime();
-        auto timeout = endsAt - now;
-        endTimer = setTimer(timeout, &end, false);
+        endTimer = setTimer(duration, &end, false);
 
         server.onBookingStart(this);
     }
