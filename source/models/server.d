@@ -213,7 +213,7 @@ class Server {
     void onBookingStart(Booking booking) {
         this.booking = booking;
 
-        idleTimeoutTimer.rearm(idleBookingTimeout.dur!IDLE_BOOKING_UNIT);
+        if (idleBookingTimeout > 0) idleTimeoutTimer.rearm(idleBookingTimeout.dur!IDLE_BOOKING_UNIT);
 
         reset();
 
@@ -430,7 +430,7 @@ class Server {
         if (statusParser.parse(&status, line)) {
             resetPollTimers();
 
-            if (idleTimeoutTimer && booking &&  status.humanPlayers >= MIN_IDLE_PLAYERS) {
+            if (idleTimeoutTimer && idleBookingTimeout > 0 && booking &&  status.humanPlayers >= MIN_IDLE_PLAYERS) {
                 timerTask.tid.send(TimerType.idleTimeout, cast(Duration)idleBookingTimeout.dur!IDLE_BOOKING_UNIT);
             }
         }
