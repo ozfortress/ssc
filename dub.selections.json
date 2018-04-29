@@ -4,7 +4,6 @@
 		"base32": "0.1.0",
 		"botan": "1.12.9",
 		"botan-math": "1.0.3",
-		"chap": "0.4.0",
 		"ddmp": "0.0.1-0.dev.3",
 		"diet-ng": "1.4.5",
 		"eventcore": "0.8.34",
@@ -19,7 +18,7 @@
 		"supervised": "0.2.0",
 		"taggedalgebraic": "0.10.11",
 		"trial": "0.5.3",
-		"unit-threaded": "0.7.41",
+		"unit-threaded": "0.7.43",
 		"vibe-core": "1.4.0",
 		"vibe-d": "0.8.3"
 	}
