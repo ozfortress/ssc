@@ -213,7 +213,7 @@ class Server {
     void onBookingStart(Booking booking) {
         this.booking = booking;
 
-        idleTimeoutTimer.rearm(idleBookingTimeout.dur!IDLE_BOOKING_UNIT);
+        if (idleBookingTimeout > 0) idleTimeoutTimer.rearm(idleBookingTimeout.dur!IDLE_BOOKING_UNIT);
 
         reset();
 
