@@ -1,2 +1,3 @@
-- foreach (line; logs)
-    p= line
+pre
+    - foreach (line; logs)
+        |= line ~ "\n"
