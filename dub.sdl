@@ -4,14 +4,14 @@ authors "Benjamin Schaaf"
 copyright "Copyright © 2017, Benjamin Schaaf"
 license "MIT"
 
-dependency "vibe-d" version="~>0.8.3"
-dependency "jsonizer" version="~>0.7.3"
+dependency "vibe-d" version="~>0.9.4"
+dependency "jsonizer" version="~>0.7.7"
 dependency "base32" version="~>0.1.0"
 dependency "supervised" version="~>0.2.0"
 
 # Make sure we use botan
 dependency "vibe-d:tls" version="*"
-subConfiguration "vibe-d:tls" "botan"
+subConfiguration "vibe-d:tls" "openssl-1.1"
 
 preBuildCommands "mkdir -p bin"
 targetName "bin/ssc"

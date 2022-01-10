@@ -17,7 +17,7 @@ mixin template WebInterface() {
             if (client.isNull) return false;
 
             this.client = client.get;
-            return client.isAdmin;
+            return this.client.isAdmin;
         });
     }
 

@@ -9,7 +9,7 @@ class ServersInterface {
 
     Server server;
 
-    protected void requireServer(scope HTTPServerRequest req) {
+    private void requireServer(scope HTTPServerRequest req) {
         server = Server.get(req.params["server"]);
         enforceHTTP(server !is null, HTTPStatus.notFound);
     }

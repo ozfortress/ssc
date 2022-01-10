@@ -28,7 +28,7 @@ auto createTimer(void delegate() @safe callback) @safe {
         try {
             callback();
         } catch (Exception error) {
-            logWarn("Timer callback failed: %s", error.toString().sanitize);
+            logWarn("Timer callback failed: %s", error.toString());
 
             scope (failure) assert(false);
         }
