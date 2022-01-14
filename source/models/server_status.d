@@ -96,11 +96,9 @@ struct ServerStatusParser {
     private string parseUDPIP(const string line) {
         auto udp = line.matchFirst(`[0-9\.]+:[0-9]+`);
         if (udp.empty) return "";
-        auto port = udp.front.split(":")[1];
-
-        auto ipLine = line.matchFirst(`public ip: [0-9\.]+`);
-        if (ipLine.empty) return "";
-        auto ip = ipLine.front.split(":")[1].strip();
+        auto ip_port = udp.front.split(":");
+        auto ip = ip_port[0];
+        auto port = ip_port[1];
         return "%s:%s".format(ip, port);
     }
 
